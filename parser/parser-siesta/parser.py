@@ -53,21 +53,34 @@ def ArraySM(header, row, build, **kwargs):
             **kwargs)
     return sm
 
+
+def tokenize(lines):
+    return np.array([line.split() for line in lines], object)
+
+
 def build_cell(backend, lines):
-    cell = np.array([[float(x) for x in line.split()] for line in lines])
+    cell = tokenize(lines).astype(float)
     backend.addArrayValues('simulation_cell', convert_unit(cell, 'angstrom'))
 
 def get_forces(backend, lines):
-    arr = np.array([line.split() for line in lines], object)
-    forces = arr[:, 1:].astype(float)
+    forces = tokenize(lines)[:, 2:].astype(float)
+    assert forces.shape[1] == 3
     backend.addArrayValues('atom_forces', convert_unit(forces, 'eV/angstrom'))
 
+def get_stress(backend, lines):
+    stress = tokenize(lines)[:, 1:].astype(float)
+    assert stress.shape == (3, 3)
+    backend.addArrayValues('atom_stress', convert_unit(stress, 'eV/angstrom**3'))
+
+
 def add_positions_and_labels(backend, lines):
-    matrix = np.array([line.split() for line in lines], object)
+    matrix = tokenize(lines)
     positions = matrix[:, 1:4].astype(float)
     labels = np.array([chemical_symbols[i] for i in matrix[:, 5].astype(int)])
     backend.addArrayValues('atom_positions', convert_unit(positions, 'bohr'))
     backend.addArrayValues('atom_labels', labels)
+
+
 
 infoFileDescription = SM(
     name='root',
@@ -84,6 +97,7 @@ infoFileDescription = SM(
                 add_positions_and_labels),
         SM(r'\s*Single-point calculation',
            name='singleconfig',
+           # XXX some of the matchers should not be in single config calculation
            sections=['section_single_configuration_calculation'],
            subFlags=SM.SubFlags.Sequenced,
            subMatchers=[
@@ -91,6 +105,9 @@ infoFileDescription = SM(
                        r'\s*\S+\s*\S+\s*\S+',
                        build_cell),
                SM(r'\s*scf:\s*iscf', name='scf', required=True),
+               # There is a stupid header in the middle of nowhere which is
+               # equal to a later header, so we swallow it here:
+               SM(r'siesta: Atomic forces \(eV/Ang\):'),
                SM(r'siesta: Program\'s energy decomposition \(eV\):',
                   name='energy header 1',
                   weak=True,
@@ -112,7 +129,12 @@ infoFileDescription = SM(
                       ]),
                ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
                        r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
-                       get_forces, weak=True)
+                       get_forces),
+               ArraySM(r'siesta: Stress tensor ',#\(static\) \(eV/Ang**3\):',
+                       r'siesta:\s*\S+\s+\S+\s+\S+',
+                       get_stress),
+               # The purpose of the following matcher is to parse all lines
+               SM(r'x^', name='end')
            ])
     ])
 

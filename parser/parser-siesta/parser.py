@@ -29,16 +29,20 @@ def siesta_energy(title, meta, **kwargs):
 
 
 def ArraySM(header, row, build, **kwargs):
-    lines = []
 
-    def addrow(parser):
-        line = parser.fIn.readline()
-        lines.append(line)
+    class LineBuf:
+        def __init__(self):
+            self.lines = []
 
-    def _build_array(parser):
-        build(parser.backend.superBackend, lines)
+        def addrow(self, parser):
+            line = parser.fIn.readline()
+            self.lines.append(line)
 
+        def _build_array(self, parser):
+            build(parser.backend.superBackend, self.lines)
+            self.lines = []
 
+    linebuf = LineBuf()
     sm = SM(header,
             name=kwargs.pop('name', 'startarray'),
             required=True,
@@ -46,8 +50,8 @@ def ArraySM(header, row, build, **kwargs):
             subMatchers=[
                 SM(row, name='array', repeats=True,
                    forwardMatch=True,
-                   adHoc=addrow, required=True),
-                SM(r'', endReStr='', adHoc=_build_array, name='endarray',
+                   adHoc=linebuf.addrow, required=True),
+                SM(r'', endReStr='', adHoc=linebuf._build_array, name='endarray',
                    forwardMatch=True)
             ],
             **kwargs)
@@ -184,45 +188,52 @@ infoFileDescription = SM(
                        r'\s*[0-9]+\s+\S+\s+\S+\s+\S+',
                        get_forces, name='forces-in-opt-step'),
                SM(r'Target enthalpy', name='end-singleconfig'),
-            SM(r'', weak=True, name='After singleconfigs',
-               subFlags=SM.SubFlags.Sequenced,
-               subMatchers=[
+               # As we get past the last singleconfig, we need to add all the stuff
+               # that pertains only to the last one, basically eigs and occs.
+               # Therefore we read a bit past the last config and try to trigger
+               # this as appropriate.
+               #SM(r'outcoor: Relaxed atomic coordinates',
+               #   adHoc=read_eigenvalues),
+               #])
+               SM(r'', weak=True, name='After singleconfigs',
+                  subFlags=SM.SubFlags.Sequenced,
+                  subMatchers=[
                    # There is a stupid header in the middle of nowhere which is
                    # equal to a later header, so we swallow it here:
                    #SM(r'siesta: Atomic forces \(eV/Ang\):'),
-                   ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
-                           r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
-                           get_forces, name='forces-in-single-calc'),
-                   SM(r'siesta: Program\'s energy decomposition \(eV\):',
-                      name='energy header 1',
-                      weak=True,
-                      subMatchers=[
-                          siesta_energy('FreeEng', 'energy_free')
-                      ]),
-                   SM(r'siesta: Final energy \(eV\):',
-                      name='energy header 2',
-                      subMatchers=[
-                          siesta_energy('Band Struct\.', 'energy_sum_eigenvalues'),
-                          siesta_energy('Kinetic', 'electronic_kinetic_energy'),
-                          siesta_energy('Hartree', 'energy_electrostatic'),
+                      ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
+                              r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
+                              get_forces, name='forces-in-single-calc'),
+                      SM(r'siesta: Program\'s energy decomposition \(eV\):',
+                         name='energy header 1',
+                         weak=True,
+                         subMatchers=[
+                             siesta_energy('FreeEng', 'energy_free')
+                         ]),
+                      SM(r'siesta: Final energy \(eV\):',
+                         name='energy header 2',
+                         subMatchers=[
+                             siesta_energy('Band Struct\.', 'energy_sum_eigenvalues'),
+                             siesta_energy('Kinetic', 'electronic_kinetic_energy'),
+                             siesta_energy('Hartree', 'energy_electrostatic'),
                           #siesta_energy('Ext\. field', ''),
-                          siesta_energy('Exch\.-corr\.', 'energy_XC'),
+                             siesta_energy('Exch\.-corr\.', 'energy_XC'),
                           #siesta_energy('Ion-electron', ''),
                           #siesta_energy('Ion-Ion', ''),
                           #siesta_energy('Ekinion', ''),
-                          siesta_energy('Total', 'energy_total'),
-                          ]),
-                   ArraySM(r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
-                           r'siesta:\s*\S+\s+\S+\s+\S+',
-                           get_stress),
-                   ArraySM(r'siesta: Electric dipole \(Debye\)\s*=',
-                           r'siesta: Electric dipole \(Debye\)\s*=',
-                           get_dipole,
-                           forwardMatch=True),
+                             siesta_energy('Total', 'energy_total'),
+                         ]),
+                      ArraySM(r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
+                              r'siesta:\s*\S+\s+\S+\s+\S+',
+                              get_stress),
+                      ArraySM(r'siesta: Electric dipole \(Debye\)\s*=',
+                              r'siesta: Electric dipole \(Debye\)\s*=',
+                              get_dipole,
+                              forwardMatch=True),
                    # The purpose of the following matcher is to parse all lines
-                   SM(r'x^', name='end')
-               ])
-           ]),
+                      SM(r'x^', name='end')
+                  ])
+           ])
     ])
 
 class SiestaContext(object):

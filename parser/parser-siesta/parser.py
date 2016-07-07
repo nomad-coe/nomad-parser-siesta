@@ -11,7 +11,7 @@ from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
 from nomadcore.unit_conversion.unit_conversion \
     import register_userdefined_quantity, convert_unit
 
-from util import floating
+from util import floating, integer
 
 arg = sys.argv[1]
 metaInfoPath = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../../../../nomad-meta-info/meta_info/nomad_meta_info/siesta.nomadmetainfo.json"))
@@ -24,7 +24,7 @@ parser_info = {'name':'siesta-parser', 'version': '1.0'}
 
 
 def siesta_energy(title, meta, **kwargs):
-    return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S*)' % (title, meta),
+    return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S+)' % (title, meta),
               name=meta, **kwargs)
 
 
@@ -40,7 +40,7 @@ def ArraySM(header, row, build, **kwargs):
 
 
     sm = SM(header,
-            name='startarray',
+            name=kwargs.pop('name', 'startarray'),
             required=True,
             subFlags=SM.SubFlags.Sequenced,
             subMatchers=[
@@ -54,25 +54,66 @@ def ArraySM(header, row, build, **kwargs):
     return sm
 
 
+def errprint(func):
+    def wrapper(backend, lines):
+        try:
+            func(backend, lines)
+        except Exception:
+            print('Error in %s: %d lines' % (func.__name__,
+                                             len(lines)))
+            for line in lines:
+                print(line, file=sys.stderr)
+            raise
+    return wrapper
+
 def tokenize(lines):
     return np.array([line.split() for line in lines], object)
 
 
+@errprint
 def build_cell(backend, lines):
     cell = tokenize(lines).astype(float)
     backend.addArrayValues('simulation_cell', convert_unit(cell, 'angstrom'))
 
+@errprint
 def get_forces(backend, lines):
-    forces = tokenize(lines)[:, 2:].astype(float)
+    if len(lines) == 0:
+        # Siesta sometimes, stupidly, writes a Forces header.
+        # It then proceeds to not write any forces.
+        # Thus we ignore that silliness
+        return
+    forces = tokenize(lines)[:, 1:].astype(float)
     assert forces.shape[1] == 3
     backend.addArrayValues('atom_forces', convert_unit(forces, 'eV/angstrom'))
 
+@errprint
 def get_stress(backend, lines):
     stress = tokenize(lines)[:, 1:].astype(float)
     assert stress.shape == (3, 3)
     backend.addArrayValues('atom_stress', convert_unit(stress, 'eV/angstrom**3'))
 
+@errprint
+def get_dipole(backend, lines):
+    assert len(lines) == 1
+    dipole = tokenize(lines)[:, -3:].astype(float)
+    # Hmm.  There is no common metadata for dipole moment for some reason.
+    #print('dipole', dipole)
 
+def get_array(metaname, dtype, istart=0, iend=None, unit=None):
+    @errprint
+    def buildarray(backend, lines):
+        arr = tokenize(lines)
+        if iend is None:
+            arr = arr[:, istart:]
+        else:
+            arr = arr[:, istart:iend]
+        arr = arr.astype(dtype)
+        if unit is not None:
+            arr = convert_unit(arr, unit)
+        backend.addArrayValues(metaname, arr)
+    return buildarray
+
+@errprint
 def add_positions_and_labels(backend, lines):
     matrix = tokenize(lines)
     positions = matrix[:, 1:4].astype(float)
@@ -81,61 +122,107 @@ def add_positions_and_labels(backend, lines):
     backend.addArrayValues('atom_labels', labels)
 
 
+# .EIG file:
+#fermi level
+# nstates nspins nkpts
+# kptnumber spin1eps1 spin1eps2.... spin1epsN spin2eps1 spin2eps2... spin2epsN
+
+"""
+%block PAO.Basis                 # Define Basis set
+O                     2                    # Species label, number of l-shells
+ n=2   0   2                         # n, l, Nzeta
+   3.305      2.479   
+   1.000      1.000   
+ n=2   1   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   3.937      2.542   
+   1.000      1.000   
+H                     1                    # Species label, number of l-shells
+ n=1   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   4.709      3.760   
+   1.000      1.000   
+%endblock PAO.Basis
+"""
+
 
 infoFileDescription = SM(
     name='root',
     weak=True,
     startReStr='',
-    fixedStartValues={'program_name': 'siesta'},
+    # In SIESTA, the calculations are always periodic
+    fixedStartValues={'program_name': 'siesta',
+                      'configuration_periodic_dimensions': np.ones(3, bool)},
     sections=['section_run'],
     subFlags=SM.SubFlags.Sequenced,  # sequenced or not?
     subMatchers=[
-        SM(r'Siesta Version: (?P<program_name>siesta)-(?P<program_version>\S*)',
+        SM(r'Siesta Version: (?P<program_name>siesta)-(?P<program_version>\S+)',
            name='name&version', required=True),
         ArraySM(r'siesta: Atomic coordinates \(Bohr\) and species',
                 r'siesta:\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+',
                 add_positions_and_labels),
-        SM(r'\s*Single-point calculation',
+        ArraySM(r'siesta: Automatic unit cell vectors \(Ang\):',
+                r'siesta:\s*\S+\s*\S+\s*\S+',
+                get_array('simulation_cell', float, 1, 4, unit='angstrom')),
+        SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',
+           repeats=True,
            # XXX some of the matchers should not be in single config calculation
            sections=['section_single_configuration_calculation'],
            subFlags=SM.SubFlags.Sequenced,
            subMatchers=[
+               ArraySM(r'outcoor: Atomic coordinates \(Ang\):',
+                       r'\s*\S+\s*\S+\s*\S+',
+                       get_array('atom_positions', float, 0, 3, unit='angstrom')),
                ArraySM(r'outcell: Unit cell vectors \(Ang\):',
                        r'\s*\S+\s*\S+\s*\S+',
                        build_cell),
                SM(r'\s*scf:\s*iscf', name='scf', required=True),
-               # There is a stupid header in the middle of nowhere which is
-               # equal to a later header, so we swallow it here:
-               SM(r'siesta: Atomic forces \(eV/Ang\):'),
-               SM(r'siesta: Program\'s energy decomposition \(eV\):',
-                  name='energy header 1',
-                  weak=True,
-                  subMatchers=[
-                      siesta_energy('FreeEng', 'energy_free')
-                  ]),
-               SM(r'siesta: Final energy \(eV\):',
-                  name='energy header 2',
-                  subMatchers=[
-                      siesta_energy('Band Struct\.', 'energy_sum_eigenvalues'),
-                      siesta_energy('Kinetic', 'electronic_kinetic_energy'),
-                      siesta_energy('Hartree', 'energy_electrostatic'),
-                      #siesta_energy('Ext\. field', ''),
-                      siesta_energy('Exch\.-corr\.', 'energy_XC'),
-                      #siesta_energy('Ion-electron', ''),
-                      #siesta_energy('Ion-Ion', ''),
-                      #siesta_energy('Ekinion', ''),
-                      siesta_energy('Total', 'energy_total'),
-                      ]),
+               SM(r'SCF cycle converged after\s*%s\s*iterations'
+                  % integer('number_of_scf_iterations'), name='scf-iterations'),
+               SM(r'siesta: E_KS\(eV\)\s*=\s*%s' % floating('energy_free__eV'),
+                  name='E_KS'),
                ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
-                       r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
-                       get_forces),
-               ArraySM(r'siesta: Stress tensor ',#\(static\) \(eV/Ang**3\):',
-                       r'siesta:\s*\S+\s+\S+\s+\S+',
-                       get_stress),
-               # The purpose of the following matcher is to parse all lines
-               SM(r'x^', name='end')
-           ])
+                       r'\s*[0-9]+\s+\S+\s+\S+\s+\S+',
+                       get_forces, name='forces-in-opt-step'),
+               SM(r'Target enthalpy', name='end-singleconfig'),
+            SM(r'', weak=True, name='After singleconfigs',
+               subFlags=SM.SubFlags.Sequenced,
+               subMatchers=[
+                   # There is a stupid header in the middle of nowhere which is
+                   # equal to a later header, so we swallow it here:
+                   #SM(r'siesta: Atomic forces \(eV/Ang\):'),
+                   ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
+                           r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
+                           get_forces, name='forces-in-single-calc'),
+                   SM(r'siesta: Program\'s energy decomposition \(eV\):',
+                      name='energy header 1',
+                      weak=True,
+                      subMatchers=[
+                          siesta_energy('FreeEng', 'energy_free')
+                      ]),
+                   SM(r'siesta: Final energy \(eV\):',
+                      name='energy header 2',
+                      subMatchers=[
+                          siesta_energy('Band Struct\.', 'energy_sum_eigenvalues'),
+                          siesta_energy('Kinetic', 'electronic_kinetic_energy'),
+                          siesta_energy('Hartree', 'energy_electrostatic'),
+                          #siesta_energy('Ext\. field', ''),
+                          siesta_energy('Exch\.-corr\.', 'energy_XC'),
+                          #siesta_energy('Ion-electron', ''),
+                          #siesta_energy('Ion-Ion', ''),
+                          #siesta_energy('Ekinion', ''),
+                          siesta_energy('Total', 'energy_total'),
+                          ]),
+                   ArraySM(r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
+                           r'siesta:\s*\S+\s+\S+\s+\S+',
+                           get_stress),
+                   ArraySM(r'siesta: Electric dipole \(Debye\)\s*=',
+                           r'siesta: Electric dipole \(Debye\)\s*=',
+                           get_dipole,
+                           forwardMatch=True),
+                   # The purpose of the following matcher is to parse all lines
+                   SM(r'x^', name='end')
+               ])
+           ]),
     ])
 
 class SiestaContext(object):

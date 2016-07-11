@@ -74,10 +74,10 @@ def tokenize(lines):
     return np.array([line.split() for line in lines], object)
 
 
-@errprint
-def build_cell(backend, lines):
-    cell = tokenize(lines).astype(float)
-    backend.addArrayValues('simulation_cell', convert_unit(cell, 'angstrom'))
+#@errprint
+#def build_cell(backend, lines):
+#    cell = tokenize(lines).astype(float)
+#    backend.addArrayValues('simulation_cell', convert_unit(cell, 'angstrom'))
 
 @errprint
 def get_forces(backend, lines):
@@ -94,7 +94,7 @@ def get_forces(backend, lines):
 def get_stress(backend, lines):
     stress = tokenize(lines)[:, 1:].astype(float)
     assert stress.shape == (3, 3)
-    backend.addArrayValues('atom_stress', convert_unit(stress, 'eV/angstrom**3'))
+    backend.addArrayValues('stress_tensor', convert_unit(stress, 'eV/angstrom**3'))
 
 @errprint
 def get_dipole(backend, lines):
@@ -233,7 +233,6 @@ class SiestaContext(object):
 
         nkpts = int(tokens[0])
         data = np.array(tokens[1:], object).reshape(-1, 5)
-        print('data', data)
         coords = data[:, 1:4].astype(float)
         weights = data[:, 4].astype(float)
         backend.addArrayValues('eigenvalues_kpoints', coords)
@@ -257,12 +256,16 @@ infoFileDescription = SM(
            name='name&version', required=True),
         SM(r'reinit: System Label:\s*\S*', name='syslabel', forwardMatch=True,
            adHoc=context.set_label),
-        ArraySM(r'siesta: Atomic coordinates \(Bohr\) and species',
-                r'siesta:\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+',
-                add_positions_and_labels),
-        ArraySM(r'siesta: Automatic unit cell vectors \(Ang\):',
-                r'siesta:\s*\S+\s*\S+\s*\S+',
-                get_array('simulation_cell', float, 1, 4, unit='angstrom')),
+        SM(r'', weak=True, forwardMatch=True, name='system section',
+           sections=['section_system'],
+           subMatchers=[
+               ArraySM(r'siesta: Atomic coordinates \(Bohr\) and species',
+                       r'siesta:\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+',
+                       add_positions_and_labels),
+               ArraySM(r'siesta: Automatic unit cell vectors \(Ang\):',
+                       r'siesta:\s*\S+\s*\S+\s*\S+',
+                       get_array('simulation_cell', float, 1, 4, unit='angstrom'))
+               ]),
         SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',
            repeats=True,
@@ -273,9 +276,9 @@ infoFileDescription = SM(
                ArraySM(r'outcoor: Atomic coordinates \(Ang\):',
                        r'\s*\S+\s*\S+\s*\S+',
                        get_array('atom_positions', float, 0, 3, unit='angstrom')),
-               ArraySM(r'outcell: Unit cell vectors \(Ang\):',
-                       r'\s*\S+\s*\S+\s*\S+',
-                       build_cell),
+               #ArraySM(r'outcell: Unit cell vectors \(Ang\):',
+               #        r'\s*\S+\s*\S+\s*\S+',
+               #        build_cell),
                SM(r'\s*scf:\s*iscf', name='scf', required=True),
                SM(r'SCF cycle converged after\s*%s\s*iterations'
                   % integer('number_of_scf_iterations'), name='scf-iterations'),

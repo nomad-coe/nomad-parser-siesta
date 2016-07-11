@@ -23,10 +23,10 @@ object SiestaParser extends SimpleExternalParserGenerator(
   mainFileTypes = Seq("text/.*"),
   //TODO: Update the replacement string (mainFileRe)
   mainFileRe = """Siesta Version: siesta-""".r,
-  cmd = Seq(DefaultPythonInterpreter.pythonExe(), "${envDir}/parsers/siesta/parser/parser-siesta/parser_siesta.py",
+  cmd = Seq(DefaultPythonInterpreter.pythonExe(), "${envDir}/parsers/siesta/parser/parser-siesta/main.py",
     "${mainFilePath}"),
   resList = Seq(
-    "parser-siesta/parser.py",
+    "parser-siesta/main.py",
     "parser-siesta/util.py",
     "parser-siesta/setup_paths.py",
     "nomad_meta_info/public.nomadmetainfo.json",

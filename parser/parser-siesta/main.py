@@ -13,7 +13,6 @@ from nomadcore.unit_conversion.unit_conversion \
 
 from util import floating, integer
 
-arg = sys.argv[1]
 metaInfoPath = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../../../../nomad-meta-info/meta_info/nomad_meta_info/siesta.nomadmetainfo.json"))
 metaInfoEnv, warnings = loadJsonFile(filePath=metaInfoPath,
                                      dependencyLoader=None,
@@ -338,9 +337,14 @@ infoFileDescription = SM(
            ])
     ])
 
+def main(**kwargs):
+    mainFunction(mainFileDescription=infoFileDescription,
+                 metaInfoEnv=metaInfoEnv,
+                 parserInfo=parser_info,
+                 cachingLevelForMetaName={},
+                 superContext=context,
+                 **kwargs)
 
-mainFunction(mainFileDescription=infoFileDescription,
-             metaInfoEnv=metaInfoEnv,
-             parserInfo=parser_info,
-             cachingLevelForMetaName={},
-             superContext=context)
+if __name__ == '__main__':
+    main()
+

@@ -5,9 +5,9 @@ from main import main
 
 testdir = '../../test/examples'
 dirnames = ['H2O',
-            'h2o_relax',
-            'Al_slab',
-            'Al_uc',
+            'H2O-relax',
+            'Al-slab',
+            'Al-uc',
             'Fe',
             'MgO']
 

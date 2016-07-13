@@ -255,29 +255,25 @@ infoFileDescription = SM(
            name='name&version', required=True),
         SM(r'reinit: System Label:\s*\S*', name='syslabel', forwardMatch=True,
            adHoc=context.set_label),
-        SM(r'', weak=True, forwardMatch=True, name='system section',
-           sections=['section_system'],
-           subMatchers=[
-               ArraySM(r'siesta: Atomic coordinates \(Bohr\) and species',
-                       r'siesta:\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+',
-                       add_positions_and_labels),
-               ArraySM(r'siesta: Automatic unit cell vectors \(Ang\):',
-                       r'siesta:\s*\S+\s*\S+\s*\S+',
-                       get_array('simulation_cell', float, 1, 4, unit='angstrom'))
-               ]),
         SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',
            repeats=True,
            # XXX some of the matchers should not be in single config calculation
-           sections=['section_single_configuration_calculation'],
+           sections=['section_single_configuration_calculation', 'section_system'],
            subFlags=SM.SubFlags.Sequenced,
            subMatchers=[
+               SM(r'', weak=True, forwardMatch=True, name='system section',
+                  subMatchers=[
+                      ArraySM(r'siesta: Atomic coordinates \(Bohr\) and species',
+                              r'siesta:\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+',
+                              add_positions_and_labels),
+                      ArraySM(r'siesta: Automatic unit cell vectors \(Ang\):',
+                              r'siesta:\s*\S+\s*\S+\s*\S+',
+                              get_array('simulation_cell', float, 1, 4, unit='angstrom'))
+                  ]),
                ArraySM(r'outcoor: Atomic coordinates \(Ang\):',
                        r'\s*\S+\s*\S+\s*\S+',
                        get_array('atom_positions', float, 0, 3, unit='angstrom')),
-               #ArraySM(r'outcell: Unit cell vectors \(Ang\):',
-               #        r'\s*\S+\s*\S+\s*\S+',
-               #        build_cell),
                SM(r'\s*scf:\s*iscf', name='scf', required=True),
                SM(r'SCF cycle converged after\s*%s\s*iterations'
                   % integer('number_of_scf_iterations'), name='scf-iterations'),
@@ -291,9 +287,6 @@ infoFileDescription = SM(
                # that pertains only to the last one, basically eigs and occs.
                # Therefore we read a bit past the last config and try to trigger
                # this as appropriate.
-               #SM(r'outcoor: Relaxed atomic coordinates',
-               #   adHoc=read_eigenvalues),
-               #])
                SM(r'', weak=True, name='After singleconfigs',
                   subFlags=SM.SubFlags.Sequenced,
                   subMatchers=[

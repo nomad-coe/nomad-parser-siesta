@@ -33,7 +33,7 @@ def ArraySM(header, row, build, **kwargs):
         def __init__(self):
             self.lines = []
 
-        def addrow(self, parser):
+        def adhoc_addrow(self, parser):
             line = parser.fIn.readline()
             self.lines.append(line)
 
@@ -49,7 +49,7 @@ def ArraySM(header, row, build, **kwargs):
             subMatchers=[
                 SM(row, name='array', repeats=True,
                    forwardMatch=True,
-                   adHoc=linebuf.addrow, required=True),
+                   adHoc=linebuf.adhoc_addrow, required=True),
                 SM(r'', endReStr='', adHoc=linebuf._build_array, name='endarray',
                    forwardMatch=True)
             ],
@@ -125,11 +125,6 @@ def add_positions_and_labels(backend, lines):
     backend.addArrayValues('atom_labels', labels)
 
 
-# .EIG file:
-#fermi level
-# nstates nspins nkpts
-# kptnumber spin1eps1 spin1eps2.... spin1epsN spin2eps1 spin2eps2... spin2epsN
-
 """
 %block PAO.Basis                 # Define Basis set
 O                     2                    # Species label, number of l-shells
@@ -169,7 +164,7 @@ class SiestaContext(object):
         self.dirname = None  # Base directory of calculations
         self.files = None
 
-    def set_label(self, parser):
+    def adhoc_set_label(self, parser):
         # ASSUMPTION: the parser fIn is in the 'root' of whatever was uploaded.
         # This may not be true.  Figure out how to do this in general.
         line = parser.fIn.readline()
@@ -182,16 +177,40 @@ class SiestaContext(object):
         path = os.path.abspath(fname)
         self.dirname, _ = os.path.split(path)
 
-    #def is_last_configuration(self, parser):
-    #    self._is_last_configuration = True
+    def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
+        authors = section['x_siesta_xc_authors']
+        if authors is None:
+            raise ValueError('XC authors not found!')
+
+        assert len(authors) == 1
+        authors = authors[0]
+
+        mapping = {'CA': ('LDA_X', 'LDA_C_PZ'),
+                   'PZ': ('LDA_X', 'LDA_C_PZ'),
+                   'PW92': ('LDA_X', 'LDA_C_PW'),
+                   #'PW91': '',
+                   'PBE': ('LDA_X_PBE', 'LDA_C_PBE'),
+                   'revPBE': ('GGA_X_PBE_R', 'GGA_C_PBE'),
+                   'RPBE': ('GGA_X_RPBE', 'GGA_C_PBE'),
+                   #'WC': ('GGA_X_WC', ),
+                   # Siesta does not mention which correlation is used with
+                   # the WC functional.  Is it just the PBE one?
+                   'AM05': ('GGA_X_AM05', 'GGA_C_AM05'),
+                   'PBEsol': ('GGA_X_PBE_SOL', 'GGA_C_PBE_SOL'),
+                   'BLYP': ('GGA_X_B88 + GGA_C_LYP')}
+        xc = mapping.get(authors)
+
+        if xc is None:
+            raise ValueError('XC functional %s unsupported by parser'
+                             % authors)
+
+        for funcname in xc:
+            gid = backend.openSection('section_XC_functionals')
+            backend.addValue('XC_functional_name', funcname)
+            backend.closeSection('section_XC_functionals', gid)
 
     def onClose_section_eigenvalues(self, backend, gindex, section):
         self.read_eigenvalues(backend)
-
-    #def onClose_section_single_configuration_calculation(self, backend, gindex,
-    #                                                     section):
-    #    if self._is_last_configuration:
-    #
 
     def read_eigenvalues(self, backend):
         eigfile = self.files.get('EIG')
@@ -253,8 +272,11 @@ infoFileDescription = SM(
     subMatchers=[
         SM(r'Siesta Version: (?P<program_name>siesta)-(?P<program_version>\S+)',
            name='name&version', required=True),
+        SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
+           name='xc authors',
+           sections=['section_method', 'x_siesta_section_xc_authors']),
         SM(r'reinit: System Label:\s*\S*', name='syslabel', forwardMatch=True,
-           adHoc=context.set_label),
+           adHoc=context.adhoc_set_label),
         SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',
            repeats=True,

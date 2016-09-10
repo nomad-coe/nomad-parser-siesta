@@ -274,6 +274,7 @@ infoFileDescription = SM(
            name='name&version', required=True),
         SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
            name='xc authors',
+           fixedStartValues={'x_siesta_xc_authors': 'CA'},
            sections=['section_method', 'x_siesta_section_xc_authors']),
         SM(r'reinit: System Label:\s*\S*', name='syslabel', forwardMatch=True,
            adHoc=context.adhoc_set_label),

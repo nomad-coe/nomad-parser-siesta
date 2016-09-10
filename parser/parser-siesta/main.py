@@ -2,11 +2,13 @@ from __future__ import print_function
 import os
 import sys
 import setup_paths
+from glob import glob
 
 import numpy as np
 from ase.data import chemical_symbols
 
-from nomadcore.simple_parser import mainFunction, SimpleMatcher as SM
+from nomadcore.simple_parser import (mainFunction, SimpleMatcher as SM,
+                                     AncillaryParser)
 from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
 from nomadcore.unit_conversion.unit_conversion \
     import register_userdefined_quantity, convert_unit
@@ -25,6 +27,27 @@ parser_info = {'name':'siesta-parser', 'version': '1.0'}
 def siesta_energy(title, meta, **kwargs):
     return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S+)' % (title, meta),
               name=meta, **kwargs)
+
+
+def get_input_metadata(inputvars_file):
+    inputvars = {}
+    with open(inputvars_file) as fd:
+        for line in fd:
+            if not line or line.startswith('%') or line[0].isspace():
+                continue
+
+            line = line.split('#', 1)[0]  # Strip off comment
+            tokens = line.split()
+            if not tokens:
+                continue
+            tokens = line.split()
+            if not tokens:
+                continue
+
+            metaname = 'x_siesta_input_%s' % tokens[0]
+            value = ' '.join(tokens[1:])
+            inputvars[metaname] = value
+    return inputvars
 
 
 def ArraySM(header, row, build, **kwargs):
@@ -144,6 +167,7 @@ H                     1                    # Species label, number of l-shells
 
 def locate_files(dirname, label):
     files = {}
+
     for fileid in ['EIG', 'KP']:
         path = os.path.join(dirname, '%s.%s' % (label, fileid))
         if os.path.isfile(path):
@@ -154,6 +178,10 @@ def locate_files(dirname, label):
         #       input parser logfile
         #
         # what else?  We already get force/stress/positions from stdout.
+    inplogfiles = glob('%s/fdf-*.log' % dirname)
+    if inplogfiles:
+        inplogfiles.sort()
+        files['inputlog'] = inplogfiles[-1]
     return files
 
 class SiestaContext(object):
@@ -163,6 +191,7 @@ class SiestaContext(object):
         self.fname = None
         self.dirname = None  # Base directory of calculations
         self.files = None
+        self.parser = None
 
     def adhoc_set_label(self, parser):
         # ASSUMPTION: the parser fIn is in the 'root' of whatever was uploaded.
@@ -176,6 +205,7 @@ class SiestaContext(object):
         self.fname = fname
         path = os.path.abspath(fname)
         self.dirname, _ = os.path.split(path)
+        self.parser = parser
 
     def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
         authors = section['x_siesta_xc_authors']
@@ -211,6 +241,15 @@ class SiestaContext(object):
 
     def onClose_section_eigenvalues(self, backend, gindex, section):
         self.read_eigenvalues(backend)
+
+    def onClose_x_siesta_section_input(self, backend, gindex, section):
+        inputvars_file = self.files.get('inputlog')
+        if inputvars_file is None:
+            return
+
+        inputvars = get_input_metadata(inputvars_file)
+        for metaname, value in inputvars.items():
+            backend.addValue(metaname, value)
 
     def read_eigenvalues(self, backend):
         eigfile = self.files.get('EIG')
@@ -260,6 +299,18 @@ class SiestaContext(object):
 
 context = SiestaContext()
 
+from inputvars import inputvars
+
+input_vars_description = SM(
+    name='root',
+    weak=True,
+    startReStr='',
+    subMatchers= [
+        SM(r'%{0}\s+(?P<x_siesta_input_{0}>\S+)'.format(inputvar),
+           name=inputvar)
+        for inputvar in inputvars]
+    )
+
 infoFileDescription = SM(
     name='root',
     weak=True,
@@ -267,16 +318,16 @@ infoFileDescription = SM(
     # In SIESTA, the calculations are always periodic
     fixedStartValues={'program_name': 'siesta',
                       'configuration_periodic_dimensions': np.ones(3, bool)},
-    sections=['section_run'],
+    sections=['section_run', 'x_siesta_section_input'],
     subFlags=SM.SubFlags.Sequenced,  # sequenced or not?
     subMatchers=[
-        SM(r'Siesta Version: (?P<program_name>siesta)-(?P<program_version>\S+)',
+        SM(r'Siesta Version: siesta-(?P<program_version>\S+)',
            name='name&version', required=True),
         SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
            name='xc authors',
            fixedStartValues={'x_siesta_xc_authors': 'CA'},
            sections=['section_method', 'x_siesta_section_xc_authors']),
-        SM(r'reinit: System Label:\s*\S*', name='syslabel', forwardMatch=True,
+        SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>)', name='syslabel', forwardMatch=True,
            adHoc=context.adhoc_set_label),
         SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',

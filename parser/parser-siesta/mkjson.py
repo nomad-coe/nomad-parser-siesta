@@ -35,6 +35,9 @@ json_section_template = """{
 import sys
 fname = sys.argv[1]
 
+inputvars_fd = open('inputvars.py', 'w')
+print('inputvars = [', file=inputvars_fd)
+
 with open(fname) as fd:
     varnames = []
     for line in fd:
@@ -50,6 +53,7 @@ with open(fname) as fd:
 
     jsontokens = []
     for var in varnames:
+        print("    '%s'," % var, file=inputvars_fd)
         json = json_template % dict(description=r'siesta input variable \"%s\"'
                                     % var,
                                     name='x_siesta_input_%s' % var,
@@ -64,3 +68,5 @@ with open(fname) as fd:
     txt = json_header % dict(parser='siesta',
                              info=', '.join(jsontokens))
     print(txt)
+
+print(']', file=inputvars_fd)

@@ -318,22 +318,30 @@ infoFileDescription = SM(
     # In SIESTA, the calculations are always periodic
     fixedStartValues={'program_name': 'siesta',
                       'configuration_periodic_dimensions': np.ones(3, bool)},
-    sections=['section_run', 'x_siesta_section_input'],
-    subFlags=SM.SubFlags.Sequenced,  # sequenced or not?
+    sections=['section_run'],
+    #subFlags=SM.SubFlags.Sequenced,  # sequenced or not?
     subMatchers=[
         SM(r'Siesta Version: siesta-(?P<program_version>\S+)',
-           name='name&version', required=True),
+           name='version'),
+        SM(r'SIESTA\s*(?P<program_version>.+)',
+           name='alt-version'),
+        SM(r'Architecture\s*:\s*(?P<x_siesta_arch>.+)', name='arch'),
+        SM(r'Compiler flags\s*:\s*(?P<x_siesta_compilerflags>.+)',
+           name='flags'),
         SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
            name='xc authors',
            fixedStartValues={'x_siesta_xc_authors': 'CA'},
            sections=['section_method', 'x_siesta_section_xc_authors']),
-        SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)', name='syslabel', forwardMatch=True,
+        SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)',
+           name='syslabel', forwardMatch=True,
+           sections=['x_siesta_section_input'],
            adHoc=context.adhoc_set_label),
         SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',
            repeats=True,
            # XXX some of the matchers should not be in single config calculation
-           sections=['section_single_configuration_calculation', 'section_system'],
+           sections=['section_single_configuration_calculation',
+                     'section_system'],
            subFlags=SM.SubFlags.Sequenced,
            subMatchers=[
                SM(r'', weak=True, forwardMatch=True, name='system section',

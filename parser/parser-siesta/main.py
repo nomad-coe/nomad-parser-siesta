@@ -109,7 +109,7 @@ def get_forces(backend, lines):
         # Thus we ignore that silliness
         return
     forces = tokenize(lines)[:, 1:].astype(float)
-    assert forces.shape[1] == 3
+    assert forces.shape[1] == 3, forces.shape
     backend.addArrayValues('atom_forces', convert_unit(forces, 'eV/angstrom'))
 
 @errprint
@@ -367,9 +367,6 @@ infoFileDescription = SM(
                    # There is a stupid header in the middle of nowhere which is
                    # equal to a later header, so we swallow it here:
                    #SM(r'siesta: Atomic forces \(eV/Ang\):'),
-                      ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
-                              r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
-                              get_forces, name='forces-in-single-calc'),
                       SM(r'siesta: Program\'s energy decomposition \(eV\):',
                          name='energy header 1',
                          weak=True,
@@ -391,6 +388,11 @@ infoFileDescription = SM(
                              SM(r'', weak=True, name='trigger_readeig',
                                 sections=['section_eigenvalues']),
                          ]),
+                      ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
+                              r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
+                              get_array('atom_forces', float, 2, 5,
+                                        unit='eV/angstrom'),
+                              name='forces-in-single-calc'),
                       ArraySM(r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
                               r'siesta:\s*\S+\s+\S+\s+\S+',
                               get_stress),

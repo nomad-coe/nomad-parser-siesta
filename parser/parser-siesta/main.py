@@ -327,7 +327,7 @@ infoFileDescription = SM(
            name='xc authors',
            fixedStartValues={'x_siesta_xc_authors': 'CA'},
            sections=['section_method', 'x_siesta_section_xc_authors']),
-        SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>)', name='syslabel', forwardMatch=True,
+        SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)', name='syslabel', forwardMatch=True,
            adHoc=context.adhoc_set_label),
         SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
            name='singleconfig',

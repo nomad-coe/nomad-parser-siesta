@@ -1,0 +1,123 @@
+slurmstepd: *** JOB 63887 ON parsons-n001 CANCELLED AT 2016-07-12T21:11:47 DUE TO TIME LIMIT ***
+
+
+###############################################################################
+TCHPC Cluster: parsons
+Job 63887 (Au.sh) for User 'drogheta' in Account 'physics'
+Finished at: Tue Jul 12 21:11:47 IST 2016
+
+Job completion status:
+======================
+
+       JobID    JobName AllocCPUS NTasks NNodes     MaxRSS    MaxRSSNode  MaxDiskRead MaxDiskWrite    Elapsed      State ExitCode 
+------------ ---------- --------- ------ ------ ---------- ------------- ------------ ------------ ---------- ---------- -------- 
+63887             Au.sh        32             4                                                      00:30:15    TIMEOUT      1:0 
+63887.0           orted         3      3      3                                                      00:30:13    TIMEOUT      0:0 
+
+
+Job details:
+============
+
+JobId=63887 JobName=Au.sh
+   UserId=drogheta(1350) GroupId=drogheta(1503)
+   Priority=348388 Nice=0 Account=physics QOS=normal
+   JobState=COMPLETING Reason=TimeLimit Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:1
+   DerivedExitCode=0:0
+   RunTime=00:30:15 TimeLimit=00:30:00 TimeMin=N/A
+   SubmitTime=2016-07-12T20:41:32 EligibleTime=2016-07-12T20:41:32
+   StartTime=2016-07-12T20:41:32 EndTime=2016-07-12T21:11:47
+   PreemptTime=None SuspendTime=None SecsPreSuspend=0
+   Partition=debug AllocNode:Sid=parsons01:17796
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=parsons-n[001-004]
+   BatchHost=parsons-n001
+   NumNodes=4 NumCPUs=32 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=32,mem=60000,node=4
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+     Nodes=parsons-n[001-004] CPU_IDs=0-7 Mem=15000
+   MinCPUsNode=1 MinMemoryNode=15000M MinTmpDiskNode=0
+   Features=(null) Gres=(null) Reservation=(null)
+   Shared=0 Contiguous=0 Licenses=(null) Network=(null)
+   Command=/gscratch/drogheta/for_Ask/Au/scregion/Au.sh
+   WorkDir=/gscratch/drogheta/for_Ask/Au/scregion
+   StdErr=/gscratch/drogheta/for_Ask/Au/scregion/slurm-63887.out
+   StdIn=/dev/null
+   StdOut=/gscratch/drogheta/for_Ask/Au/scregion/slurm-63887.out
+   Power= SICP=0
+
+
+Disk quota details:
+===================
+
+Quota Type           Name  Filesystem     Usage in MB     Limit in MB    % Used
+-------------------------------------------------------------------------------
+USER             drogheta       /home          50,559          51,200    98.75%
+USER             drogheta   /projects         724,923               0       N/A
+
+GROUP         pi-ssanvito   /projects       5,897,909       6,291,456    93.74%
+
+
+SLURM Bank Statement:
+=====================
+
+User           Usage |        Account     Usage | Account Limit Available (CPU hrs)
+---------- --------- + -------------- --------- + ------------- ---------
+aakande          164 |        PHYSICS   464,527 |             0       N/A
+amaury             0 |        PHYSICS   464,527 |             0       N/A
+anais            904 |        PHYSICS   464,527 |             0       N/A
+andrassa          38 |        PHYSICS   464,527 |             0       N/A
+awadhesh       3,027 |        PHYSICS   464,527 |             0       N/A
+baadji         2,381 |        PHYSICS   464,527 |             0       N/A
+bansalk            0 |        PHYSICS   464,527 |             0       N/A
+barbot             0 |        PHYSICS   464,527 |             0       N/A
+bosonie          127 |        PHYSICS   464,527 |             0       N/A
+bossel        20,991 |        PHYSICS   464,527 |             0       N/A
+cardonas          66 |        PHYSICS   464,527 |             0       N/A
+cgarcia        3,736 |        PHYSICS   464,527 |             0       N/A
+cmotta             0 |        PHYSICS   464,527 |             0       N/A
+cucinotta        548 |        PHYSICS   464,527 |             0       N/A
+darach             0 |        PHYSICS   464,527 |             0       N/A
+dasc               0 |        PHYSICS   464,527 |             0       N/A
+dbennett       1,477 |        PHYSICS   464,527 |             0       N/A
+drogheta       7,499 |        PHYSICS   464,527 |             0       N/A
+ellism             0 |        PHYSICS   464,527 |             0       N/A
+frinaldi           5 |        PHYSICS   464,527 |             0       N/A
+galantem       7,903 |        PHYSICS   464,527 |             0       N/A
+jacopo        22,628 |        PHYSICS   464,527 |             0       N/A
+janelson           0 |        PHYSICS   464,527 |             0       N/A
+kaifeng            0 |        PHYSICS   464,527 |             0       N/A
+kapildeb           0 |        PHYSICS   464,527 |             0       N/A
+kellehco           0 |        PHYSICS   464,527 |             0       N/A
+kumaras            0 |        PHYSICS   464,527 |             0       N/A
+kunlin             0 |        PHYSICS   464,527 |             0       N/A
+llololl            0 |        PHYSICS   464,527 |             0       N/A
+longed        16,492 |        PHYSICS   464,527 |             0       N/A
+lunghia        1,298 |        PHYSICS   464,527 |             0       N/A
+maria        140,558 |        PHYSICS   464,527 |             0       N/A
+mohebbir         368 |        PHYSICS   464,527 |             0       N/A
+mzic               0 |        PHYSICS   464,527 |             0       N/A
+prasongj           0 |        PHYSICS   464,527 |             0       N/A
+rajarshi           0 |        PHYSICS   464,527 |             0       N/A
+rdong          2,379 |        PHYSICS   464,527 |             0       N/A
+roychous          24 |        PHYSICS   464,527 |             0       N/A
+runggeri       2,185 |        PHYSICS   464,527 |             0       N/A
+sarsari        5,672 |        PHYSICS   464,527 |             0       N/A
+shuklag            3 |        PHYSICS   464,527 |             0       N/A
+smcgrat            0 |        PHYSICS   464,527 |             0       N/A
+snilaoir           0 |        PHYSICS   464,527 |             0       N/A
+spellacl           0 |        PHYSICS   464,527 |             0       N/A
+ssanvito           0 |        PHYSICS   464,527 |             0       N/A
+tom00        224,055 |        PHYSICS   464,527 |             0       N/A
+
+
+Acknowledgements:
+=================
+
+Note that usage of TCHPC Resources *must* be acknowledged in all publications.
+
+Please see this page for details relevant to this cluster:
+
+http://www.tchpc.tcd.ie/resources/acknowledgementpolicy
+
+################################################################################

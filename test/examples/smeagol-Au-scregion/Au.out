@@ -1,0 +1,1222 @@
+SIESTA 1.3.7  -- [1.3f1 release] (04 Feb 2004)
+Architecture  : mpif90
+Compiler flags:  -O3 -openmp 
+PARALLEL version
+
+* Running on   32 nodes in parallel
+ OMP_NUM_THREADS environment variable=                                         0
+ MKL_NUM_THREADS environment variable=                                         0
+ OMP_NUM_THREADS environment variable=                                         1
+ MKL_NUM_THREADS environment variable=                                         1
+ Maximum number of Threads, node index:           8           1
+ Maximum number of Threads, node index:           8          24
+ Maximum number of Threads, node index:           8           0
+ Maximum number of Threads, node index:           8           4
+ Maximum number of Threads, node index:           8          28
+ Maximum number of Threads, node index:           8           8
+ Maximum number of Threads, node index:           8          16
+ Maximum number of Threads, node index:           8          12
+ Maximum number of Threads, node index:           8          20
+ Maximum number of Threads, node index:           8          10
+ Maximum number of Threads, node index:           8          13
+ Maximum number of Threads, node index:           8          14
+ Maximum number of Threads, node index:           8          15
+ Maximum number of Threads, node index:           8           9
+ Maximum number of Threads, node index:           8          11
+ Maximum number of Threads, node index:           8          31
+ Maximum number of Threads, node index:           8           3
+ Maximum number of Threads, node index:           8           6
+ Maximum number of Threads, node index:           8           7
+ Maximum number of Threads, node index:           8           2
+ Maximum number of Threads, node index:           8          29
+ Maximum number of Threads, node index:           8          30
+ Maximum number of Threads, node index:           8          25
+ Maximum number of Threads, node index:           8          26
+ Maximum number of Threads, node index:           8          27
+ Maximum number of Threads, node index:           8          17
+ Maximum number of Threads, node index:           8          18
+ Maximum number of Threads, node index:           8          19
+ Maximum number of Threads, node index:           8          21
+ Maximum number of Threads, node index:           8          22
+ Maximum number of Threads, node index:           8          23
+ Maximum number of Threads, node index:           8           5
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           4
+ Node index, Thread index           0           2
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           7
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           1
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           5
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           3
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           0
+ In parallel region?  T
+ Number of Threads in parallel region           8
+ Node index, Thread index           0           6
+>> Start of run:  13-JUL-2016   7:55:44
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+#
+SystemName            Au_device        # optional change
+SystemLabel  Au
+#********************************************************
+# Specification of atomic species and positions
+#********************************************************
+# Chemical species
+NumberOfSpecies    1
+%block ChemicalSpeciesLabel
+ 1 79 Au
+%endblock ChemicalSpeciesLabel
+# UNIT CELL
+LatticeConstant          1.0 Ang
+%block LatticeVectors
+   5.1209   0.0000000000  0.0000000000
+   0.0000000000  2.9566  0.0000000000
+   0.0000000000  0.0000000000  36.21
+%endblock LatticeVectors
+# ATOMIC POSITIONS
+NumberOfAtoms    28
+AtomicCoordinatesFormat    Ang
+%block AtomicCoordinatesAndAtomicSpecies
+      0.853483    1.478277    0.000000  1
+      3.413937    0.000000    0.000000  1
+      0.000000    0.000000    2.414000  1
+      2.560449    1.478277    2.414000  1
+      1.706973    0.000000    4.828000  1
+      4.267422    1.478277    4.828000  1
+      0.853483    1.478277    7.242000  1
+      3.413937    0.000000    7.242000  1
+      0.000000    0.000000    9.656000  1
+      2.560449    1.478277    9.656000  1
+      1.706973    0.000000   12.070000  1
+      4.267422    1.478277   12.070000  1
+      0.853483    1.478277   14.484000  1
+      3.413937    0.000000   14.484000  1
+      1.706973    0.000000   19.312000  1
+      4.267422    1.478277   19.312000  1
+      0.853483    1.478277   21.726000  1
+      3.413937    0.000000   21.726000  1
+      0.000000    0.000000   24.140000  1
+      2.560449    1.478277   24.140000  1
+      1.706973    0.000000   26.554000  1
+      4.267422    1.478277   26.554000  1
+      0.853483    1.478277   28.968000  1
+      3.413937    0.000000   28.968000  1
+      0.000000    0.000000   31.382000  1
+      2.560449    1.478277   31.382000  1
+      1.706973    0.000000   33.796000  1
+      4.267422    1.478277   33.796000  1
+%endblock AtomicCoordinatesAndAtomicSpecies
+#********************************************************
+# DFT options
+#********************************************************
+# Basis set variables
+PAO.BasisType    split
+PAO.EnergyShift         0.02700000000 eV
+%block PAO.Basis
+Au          3                    # Species label, number of l-shells
+ n=6   0   2                   # n, l, Nzeta, Polarization, NzetaPol
+   6.0    0.0
+ n=6   1   2                    # n, l, Nzeta, Polarization, NzetaPol
+   5.0    0.0
+ n=5   2   2                         # n, l, Nzeta
+   4.0    0.0
+%endblock PAO.Basis
+%block kgrid_Monkhorst_Pack
+  4   0   0     0.0
+  0   4   0     0.0
+  0   0 1     0.0
+%endblock kgrid_Monkhorst_Pack
+# General variables
+ElectronicTemperature     200 K
+MeshCutoff                300. Ry
+xc.functional             LDA           # Exchange-correlation functional
+xc.authors                CA
+#SpinPolarized             T
+#SpinOrbit                       T
+# SCF variables
+DM.MixSCF1                        T          # optional change
+MaxSCFIterations         1000          # Maximum number of SCF iter
+DM.MixingWeight                 0.1         # optional change
+DM.Tolerance                 1.0E-5
+DM.UseSaveDM             true           # to use continuation files
+DM.NumberPulay                    5
+SolutionMethod   	      diagon
+#FixSpin		      T
+#TotalSpin             0.5
+# Output variables
+WriteMullikenPop                   0
+WriteBands                         F
+SaveRho                            T
+SaveElectrostaticPotential         T
+SaveTotalPotential                 F
+WriteCoorXmol                      T
+WriteMDXmol                        T
+#********************************************************
+# SMEAGOL options
+#********************************************************
+# perform a transport calculation
+EMTransport               T
+# set number of energy points for integrals
+NEnergReal                0
+NEnergImCircle           32
+NEnergImLine             32
+NPoles                   96
+#set bias range
+VInitial                 0.00d0 eV
+VFinal                   0.00d0 eV
+NIVPoints                0
+# General variables
+Delta                    1.d-6
+EnergLowestBound        -3.0d0 Ry
+#InitTransport            T
+WriteDMT                 T
+# Matching of Hartree potential with the leads
+HartreeLeadsBottom       -17.04302597    eV
+HartreeLeadsLeft         0.00          Ang
+HartreeLeadsRight        0.00          Ang
+# print transmission coefficient
+TrCoefficients           T
+NTransmPoints            100
+TransmissionOverK        F
+InitTransmRange         -3  eV
+FinalTransmRange         1  eV
+TRC.EMDOS                F
+TRC.EMPDOS               F
+#WriteSpinSCF              T
+#WriteSpinMulliken         T
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Au_device                                                  
+reinit: -----------------------------------------------------------------------
+reinit: System Label: Au                  
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: Au Atomic number:          79
+Ground state valence configuration:   6s01  5d10
+Reading pseudopotential information in formatted form from Au.psf
+For Au, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+Au                   Z=  79    Mass=  196.97        Charge=  0.0000    
+Lmxo=2 Lmxkb=3     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=6
+          n=1  nzeta=2  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    6.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=6
+          n=1  nzeta=2  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    5.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=2  Nsemic=0  Cnfigmx=5
+          n=1  nzeta=2  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    4.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Au  (Z =  79)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Pseudopotential generated from a relativistic atomic calculation
+read_vps: There are spin-orbit pseudopotentials available
+
+read_vps: Valence configuration (pseudopotential and basis set generation):
+6s( 1.00) rc: 2.18
+6p( 0.00) rc: 2.47
+5d(10.00) rc: 1.79
+5f( 0.00) rc: 2.00
+Total valence charge:   11.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+comcore: Pseudo-core radius Rcore=  4.027091
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  2.9833
+V l=1 = -2*Zval/r beyond r=  2.9833
+V l=2 = -2*Zval/r beyond r=  2.9833
+V l=3 = -2*Zval/r beyond r=  2.9833
+All V_l potentials equal beyond r=  2.4425
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  2.9833
+
+VLOCAL1: 99.0% of the norm of Vloc inside      7.276 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     16.582 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    2.94627
+atom: Maximum radius for r*vlocal+2*Zval:    2.60007
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  3.175745   el= -0.445638   Ekb=  5.072790   kbcos=  0.276607
+   l= 1   rc=  3.256140   el= -0.066324   Ekb=  2.703235   kbcos=  0.227171
+   l= 2   rc=  3.020861   el= -0.526103   Ekb= -4.704026   kbcos= -0.643795
+   l= 3   rc=  3.466145   el=  0.003438   Ekb= -2.516122   kbcos= -0.010529
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 6s
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.083298
+                 energy =   -0.427281
+                kinetic =    0.413324
+    potential(screened) =   -0.840605
+       potential(ionic) =   -8.569369
+
+   izeta = 2
+                 rmatch =    5.643738
+              splitnorm =    0.150000
+                 energy =   -0.356838
+                kinetic =    0.642757
+    potential(screened) =   -0.999595
+       potential(ionic) =   -9.161462
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 6p
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.980577
+                 energy =    0.202708
+                kinetic =    0.831771
+    potential(screened) =   -0.629063
+       potential(ionic) =   -7.918051
+
+parabola: The program failed in finding a SPLIT orbital 
+parabola: with the desired splitnorm
+
+   izeta = 2
+                 rmatch =    4.918707
+              splitnorm =    0.194436
+                 energy =    0.301573
+                kinetic =    0.989003
+    potential(screened) =   -0.687431
+       potential(ionic) =   -8.483445
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 5d
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.977066
+                 energy =   -0.495955
+                kinetic =    5.256445
+    potential(screened) =   -5.752400
+       potential(ionic) =  -16.435954
+
+   izeta = 2
+                 rmatch =    2.733385
+              splitnorm =    0.150000
+                 energy =   -0.192477
+                kinetic =    7.214740
+    potential(screened) =   -7.407217
+       potential(ionic) =  -18.829792
+atom: Total number of Sankey-type orbitals: 18
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+ 6s( 1.00)                                                            
+ 6p( 0.00)                                                            
+ 5d(10.00)                                                            
+Vna: chval, zval:   11.00000  11.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.083298
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   79 Au                      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Au          3                    # Species label, number of l-shells
+ n=6   0   2                         # n, l, Nzeta 
+   6.083      5.644   
+   1.000      1.000   
+ n=6   1   2                         # n, l, Nzeta 
+   4.981      4.919   
+   1.000      1.000   
+ n=5   2   2                         # n, l, Nzeta 
+   3.977      2.733   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including defect values,
+siesta: can be found in file out.fdf
+siesta:
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+redata: Number of spin components        =     1
+redata: SpinOrbit                        =     0
+redata: Long output                      =     F
+redata: Number of Atomic Species         =     1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Write Hamilton Pop.              =     NO
+redata: Mesh Cutoff                      =   300.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =  1000
+redata: One Pulay mixing every           =     5 iterations
+redata: Mix DM in first SCF step ?       =     T
+redata: Write Pulay info on disk?        =     F
+redata: New DM Mixing Weight             =     0.1000
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000010
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     F
+redata: Electronic Temperature           =     0.0013  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     CG coord. optimization
+redata: Variable cell                    =     F
+redata: Use continuation files for CG    =     F
+redata: Maximum number of CG moves       =     0
+redata: Max atomic displ per move        =     0.2000  Bohr
+redata: Force tolerance                  =     0.0016  Ry/Bohr
+redata: ***********************************************************************
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      1.61285   2.79354   0.00000  1        1
+siesta:      6.45141   0.00000   0.00000  1        2
+siesta:      0.00000   0.00000   4.56180  1        3
+siesta:      4.83855   2.79354   4.56180  1        4
+siesta:      3.22571   0.00000   9.12360  1        5
+siesta:      8.06426   2.79354   9.12360  1        6
+siesta:      1.61285   2.79354  13.68540  1        7
+siesta:      6.45141   0.00000  13.68540  1        8
+siesta:      0.00000   0.00000  18.24720  1        9
+siesta:      4.83855   2.79354  18.24720  1       10
+siesta:      3.22571   0.00000  22.80900  1       11
+siesta:      8.06426   2.79354  22.80900  1       12
+siesta:      1.61285   2.79354  27.37080  1       13
+siesta:      6.45141   0.00000  27.37080  1       14
+siesta:      3.22571   0.00000  36.49441  1       15
+siesta:      8.06426   2.79354  36.49441  1       16
+siesta:      1.61285   2.79354  41.05621  1       17
+siesta:      6.45141   0.00000  41.05621  1       18
+siesta:      0.00000   0.00000  45.61801  1       19
+siesta:      4.83855   2.79354  45.61801  1       20
+siesta:      3.22571   0.00000  50.17981  1       21
+siesta:      8.06426   2.79354  50.17981  1       22
+siesta:      1.61285   2.79354  54.74161  1       23
+siesta:      6.45141   0.00000  54.74161  1       24
+siesta:      0.00000   0.00000  59.30341  1       25
+siesta:      4.83855   2.79354  59.30341  1       26
+siesta:      3.22571   0.00000  63.86521  1       27
+siesta:      8.06426   2.79354  63.86521  1       28
+
+initatomlists: Number of atoms, orbitals, and projectors:     28   504   448
+
+siesta: System type = bulk      
+ Nodes, Orbitals          32         504
+ blocksizedefault           8
+
+* ProcessorY, Blocksize:    4   8
+
+
+siesta: k-grid: Number of k-points =    12
+siesta: k-grid: Cutoff             =     5.913 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    4   0   0      0.000
+siesta: k-grid:    0   4   0      0.000
+siesta: k-grid:    0   0   1      0.000
+siesta: overlap:  rmaxh   veclen  direction
+siesta: overlap:  19.0989  9.6771   1
+siesta: overlap:  rmaxh   veclen  direction
+siesta: overlap:  19.0989  5.5872   2
+siesta: overlap:  rmaxh   veclen  direction
+siesta: overlap:  19.0989 68.4270   3
+ label:           1 Au                             1 s      
+ label:           2 Au                             1 s      
+ label:           3 Au                             1 py     
+ label:           4 Au                             1 pz     
+ label:           5 Au                             1 px     
+ label:           6 Au                             1 py     
+ label:           7 Au                             1 pz     
+ label:           8 Au                             1 px     
+ label:           9 Au                             1 dxy    
+ label:          10 Au                             1 dyz    
+ label:          11 Au                             1 dz2    
+ label:          12 Au                             1 dxz    
+ label:          13 Au                             1 dx2-y2 
+ label:          14 Au                             1 dxy    
+ label:          15 Au                             1 dyz    
+ label:          16 Au                             1 dz2    
+ label:          17 Au                             1 dxz    
+ label:          18 Au                             1 dx2-y2 
+ label:          19 Au                             2 s      
+ label:          20 Au                             2 s      
+ label:          21 Au                             2 py     
+ label:          22 Au                             2 pz     
+ label:          23 Au                             2 px     
+ label:          24 Au                             2 py     
+ label:          25 Au                             2 pz     
+ label:          26 Au                             2 px     
+ label:          27 Au                             2 dxy    
+ label:          28 Au                             2 dyz    
+ label:          29 Au                             2 dz2    
+ label:          30 Au                             2 dxz    
+ label:          31 Au                             2 dx2-y2 
+ label:          32 Au                             2 dxy    
+ label:          33 Au                             2 dyz    
+ label:          34 Au                             2 dz2    
+ label:          35 Au                             2 dxz    
+ label:          36 Au                             2 dx2-y2 
+ label:          37 Au                             3 s      
+ label:          38 Au                             3 s      
+ label:          39 Au                             3 py     
+ label:          40 Au                             3 pz     
+ label:          41 Au                             3 px     
+ label:          42 Au                             3 py     
+ label:          43 Au                             3 pz     
+ label:          44 Au                             3 px     
+ label:          45 Au                             3 dxy    
+ label:          46 Au                             3 dyz    
+ label:          47 Au                             3 dz2    
+ label:          48 Au                             3 dxz    
+ label:          49 Au                             3 dx2-y2 
+ label:          50 Au                             3 dxy    
+ label:          51 Au                             3 dyz    
+ label:          52 Au                             3 dz2    
+ label:          53 Au                             3 dxz    
+ label:          54 Au                             3 dx2-y2 
+ label:          55 Au                             4 s      
+ label:          56 Au                             4 s      
+ label:          57 Au                             4 py     
+ label:          58 Au                             4 pz     
+ label:          59 Au                             4 px     
+ label:          60 Au                             4 py     
+ label:          61 Au                             4 pz     
+ label:          62 Au                             4 px     
+ label:          63 Au                             4 dxy    
+ label:          64 Au                             4 dyz    
+ label:          65 Au                             4 dz2    
+ label:          66 Au                             4 dxz    
+ label:          67 Au                             4 dx2-y2 
+ label:          68 Au                             4 dxy    
+ label:          69 Au                             4 dyz    
+ label:          70 Au                             4 dz2    
+ label:          71 Au                             4 dxz    
+ label:          72 Au                             4 dx2-y2 
+ label:          73 Au                             5 s      
+ label:          74 Au                             5 s      
+ label:          75 Au                             5 py     
+ label:          76 Au                             5 pz     
+ label:          77 Au                             5 px     
+ label:          78 Au                             5 py     
+ label:          79 Au                             5 pz     
+ label:          80 Au                             5 px     
+ label:          81 Au                             5 dxy    
+ label:          82 Au                             5 dyz    
+ label:          83 Au                             5 dz2    
+ label:          84 Au                             5 dxz    
+ label:          85 Au                             5 dx2-y2 
+ label:          86 Au                             5 dxy    
+ label:          87 Au                             5 dyz    
+ label:          88 Au                             5 dz2    
+ label:          89 Au                             5 dxz    
+ label:          90 Au                             5 dx2-y2 
+ label:          91 Au                             6 s      
+ label:          92 Au                             6 s      
+ label:          93 Au                             6 py     
+ label:          94 Au                             6 pz     
+ label:          95 Au                             6 px     
+ label:          96 Au                             6 py     
+ label:          97 Au                             6 pz     
+ label:          98 Au                             6 px     
+ label:          99 Au                             6 dxy    
+ label:         100 Au                             6 dyz    
+ label:         101 Au                             6 dz2    
+ label:         102 Au                             6 dxz    
+ label:         103 Au                             6 dx2-y2 
+ label:         104 Au                             6 dxy    
+ label:         105 Au                             6 dyz    
+ label:         106 Au                             6 dz2    
+ label:         107 Au                             6 dxz    
+ label:         108 Au                             6 dx2-y2 
+ label:         109 Au                             7 s      
+ label:         110 Au                             7 s      
+ label:         111 Au                             7 py     
+ label:         112 Au                             7 pz     
+ label:         113 Au                             7 px     
+ label:         114 Au                             7 py     
+ label:         115 Au                             7 pz     
+ label:         116 Au                             7 px     
+ label:         117 Au                             7 dxy    
+ label:         118 Au                             7 dyz    
+ label:         119 Au                             7 dz2    
+ label:         120 Au                             7 dxz    
+ label:         121 Au                             7 dx2-y2 
+ label:         122 Au                             7 dxy    
+ label:         123 Au                             7 dyz    
+ label:         124 Au                             7 dz2    
+ label:         125 Au                             7 dxz    
+ label:         126 Au                             7 dx2-y2 
+ label:         127 Au                             8 s      
+ label:         128 Au                             8 s      
+ label:         129 Au                             8 py     
+ label:         130 Au                             8 pz     
+ label:         131 Au                             8 px     
+ label:         132 Au                             8 py     
+ label:         133 Au                             8 pz     
+ label:         134 Au                             8 px     
+ label:         135 Au                             8 dxy    
+ label:         136 Au                             8 dyz    
+ label:         137 Au                             8 dz2    
+ label:         138 Au                             8 dxz    
+ label:         139 Au                             8 dx2-y2 
+ label:         140 Au                             8 dxy    
+ label:         141 Au                             8 dyz    
+ label:         142 Au                             8 dz2    
+ label:         143 Au                             8 dxz    
+ label:         144 Au                             8 dx2-y2 
+ label:         145 Au                             9 s      
+ label:         146 Au                             9 s      
+ label:         147 Au                             9 py     
+ label:         148 Au                             9 pz     
+ label:         149 Au                             9 px     
+ label:         150 Au                             9 py     
+ label:         151 Au                             9 pz     
+ label:         152 Au                             9 px     
+ label:         153 Au                             9 dxy    
+ label:         154 Au                             9 dyz    
+ label:         155 Au                             9 dz2    
+ label:         156 Au                             9 dxz    
+ label:         157 Au                             9 dx2-y2 
+ label:         158 Au                             9 dxy    
+ label:         159 Au                             9 dyz    
+ label:         160 Au                             9 dz2    
+ label:         161 Au                             9 dxz    
+ label:         162 Au                             9 dx2-y2 
+ label:         163 Au                            10 s      
+ label:         164 Au                            10 s      
+ label:         165 Au                            10 py     
+ label:         166 Au                            10 pz     
+ label:         167 Au                            10 px     
+ label:         168 Au                            10 py     
+ label:         169 Au                            10 pz     
+ label:         170 Au                            10 px     
+ label:         171 Au                            10 dxy    
+ label:         172 Au                            10 dyz    
+ label:         173 Au                            10 dz2    
+ label:         174 Au                            10 dxz    
+ label:         175 Au                            10 dx2-y2 
+ label:         176 Au                            10 dxy    
+ label:         177 Au                            10 dyz    
+ label:         178 Au                            10 dz2    
+ label:         179 Au                            10 dxz    
+ label:         180 Au                            10 dx2-y2 
+ label:         181 Au                            11 s      
+ label:         182 Au                            11 s      
+ label:         183 Au                            11 py     
+ label:         184 Au                            11 pz     
+ label:         185 Au                            11 px     
+ label:         186 Au                            11 py     
+ label:         187 Au                            11 pz     
+ label:         188 Au                            11 px     
+ label:         189 Au                            11 dxy    
+ label:         190 Au                            11 dyz    
+ label:         191 Au                            11 dz2    
+ label:         192 Au                            11 dxz    
+ label:         193 Au                            11 dx2-y2 
+ label:         194 Au                            11 dxy    
+ label:         195 Au                            11 dyz    
+ label:         196 Au                            11 dz2    
+ label:         197 Au                            11 dxz    
+ label:         198 Au                            11 dx2-y2 
+ label:         199 Au                            12 s      
+ label:         200 Au                            12 s      
+ label:         201 Au                            12 py     
+ label:         202 Au                            12 pz     
+ label:         203 Au                            12 px     
+ label:         204 Au                            12 py     
+ label:         205 Au                            12 pz     
+ label:         206 Au                            12 px     
+ label:         207 Au                            12 dxy    
+ label:         208 Au                            12 dyz    
+ label:         209 Au                            12 dz2    
+ label:         210 Au                            12 dxz    
+ label:         211 Au                            12 dx2-y2 
+ label:         212 Au                            12 dxy    
+ label:         213 Au                            12 dyz    
+ label:         214 Au                            12 dz2    
+ label:         215 Au                            12 dxz    
+ label:         216 Au                            12 dx2-y2 
+ label:         217 Au                            13 s      
+ label:         218 Au                            13 s      
+ label:         219 Au                            13 py     
+ label:         220 Au                            13 pz     
+ label:         221 Au                            13 px     
+ label:         222 Au                            13 py     
+ label:         223 Au                            13 pz     
+ label:         224 Au                            13 px     
+ label:         225 Au                            13 dxy    
+ label:         226 Au                            13 dyz    
+ label:         227 Au                            13 dz2    
+ label:         228 Au                            13 dxz    
+ label:         229 Au                            13 dx2-y2 
+ label:         230 Au                            13 dxy    
+ label:         231 Au                            13 dyz    
+ label:         232 Au                            13 dz2    
+ label:         233 Au                            13 dxz    
+ label:         234 Au                            13 dx2-y2 
+ label:         235 Au                            14 s      
+ label:         236 Au                            14 s      
+ label:         237 Au                            14 py     
+ label:         238 Au                            14 pz     
+ label:         239 Au                            14 px     
+ label:         240 Au                            14 py     
+ label:         241 Au                            14 pz     
+ label:         242 Au                            14 px     
+ label:         243 Au                            14 dxy    
+ label:         244 Au                            14 dyz    
+ label:         245 Au                            14 dz2    
+ label:         246 Au                            14 dxz    
+ label:         247 Au                            14 dx2-y2 
+ label:         248 Au                            14 dxy    
+ label:         249 Au                            14 dyz    
+ label:         250 Au                            14 dz2    
+ label:         251 Au                            14 dxz    
+ label:         252 Au                            14 dx2-y2 
+ label:         253 Au                            15 s      
+ label:         254 Au                            15 s      
+ label:         255 Au                            15 py     
+ label:         256 Au                            15 pz     
+ label:         257 Au                            15 px     
+ label:         258 Au                            15 py     
+ label:         259 Au                            15 pz     
+ label:         260 Au                            15 px     
+ label:         261 Au                            15 dxy    
+ label:         262 Au                            15 dyz    
+ label:         263 Au                            15 dz2    
+ label:         264 Au                            15 dxz    
+ label:         265 Au                            15 dx2-y2 
+ label:         266 Au                            15 dxy    
+ label:         267 Au                            15 dyz    
+ label:         268 Au                            15 dz2    
+ label:         269 Au                            15 dxz    
+ label:         270 Au                            15 dx2-y2 
+ label:         271 Au                            16 s      
+ label:         272 Au                            16 s      
+ label:         273 Au                            16 py     
+ label:         274 Au                            16 pz     
+ label:         275 Au                            16 px     
+ label:         276 Au                            16 py     
+ label:         277 Au                            16 pz     
+ label:         278 Au                            16 px     
+ label:         279 Au                            16 dxy    
+ label:         280 Au                            16 dyz    
+ label:         281 Au                            16 dz2    
+ label:         282 Au                            16 dxz    
+ label:         283 Au                            16 dx2-y2 
+ label:         284 Au                            16 dxy    
+ label:         285 Au                            16 dyz    
+ label:         286 Au                            16 dz2    
+ label:         287 Au                            16 dxz    
+ label:         288 Au                            16 dx2-y2 
+ label:         289 Au                            17 s      
+ label:         290 Au                            17 s      
+ label:         291 Au                            17 py     
+ label:         292 Au                            17 pz     
+ label:         293 Au                            17 px     
+ label:         294 Au                            17 py     
+ label:         295 Au                            17 pz     
+ label:         296 Au                            17 px     
+ label:         297 Au                            17 dxy    
+ label:         298 Au                            17 dyz    
+ label:         299 Au                            17 dz2    
+ label:         300 Au                            17 dxz    
+ label:         301 Au                            17 dx2-y2 
+ label:         302 Au                            17 dxy    
+ label:         303 Au                            17 dyz    
+ label:         304 Au                            17 dz2    
+ label:         305 Au                            17 dxz    
+ label:         306 Au                            17 dx2-y2 
+ label:         307 Au                            18 s      
+ label:         308 Au                            18 s      
+ label:         309 Au                            18 py     
+ label:         310 Au                            18 pz     
+ label:         311 Au                            18 px     
+ label:         312 Au                            18 py     
+ label:         313 Au                            18 pz     
+ label:         314 Au                            18 px     
+ label:         315 Au                            18 dxy    
+ label:         316 Au                            18 dyz    
+ label:         317 Au                            18 dz2    
+ label:         318 Au                            18 dxz    
+ label:         319 Au                            18 dx2-y2 
+ label:         320 Au                            18 dxy    
+ label:         321 Au                            18 dyz    
+ label:         322 Au                            18 dz2    
+ label:         323 Au                            18 dxz    
+ label:         324 Au                            18 dx2-y2 
+ label:         325 Au                            19 s      
+ label:         326 Au                            19 s      
+ label:         327 Au                            19 py     
+ label:         328 Au                            19 pz     
+ label:         329 Au                            19 px     
+ label:         330 Au                            19 py     
+ label:         331 Au                            19 pz     
+ label:         332 Au                            19 px     
+ label:         333 Au                            19 dxy    
+ label:         334 Au                            19 dyz    
+ label:         335 Au                            19 dz2    
+ label:         336 Au                            19 dxz    
+ label:         337 Au                            19 dx2-y2 
+ label:         338 Au                            19 dxy    
+ label:         339 Au                            19 dyz    
+ label:         340 Au                            19 dz2    
+ label:         341 Au                            19 dxz    
+ label:         342 Au                            19 dx2-y2 
+ label:         343 Au                            20 s      
+ label:         344 Au                            20 s      
+ label:         345 Au                            20 py     
+ label:         346 Au                            20 pz     
+ label:         347 Au                            20 px     
+ label:         348 Au                            20 py     
+ label:         349 Au                            20 pz     
+ label:         350 Au                            20 px     
+ label:         351 Au                            20 dxy    
+ label:         352 Au                            20 dyz    
+ label:         353 Au                            20 dz2    
+ label:         354 Au                            20 dxz    
+ label:         355 Au                            20 dx2-y2 
+ label:         356 Au                            20 dxy    
+ label:         357 Au                            20 dyz    
+ label:         358 Au                            20 dz2    
+ label:         359 Au                            20 dxz    
+ label:         360 Au                            20 dx2-y2 
+ label:         361 Au                            21 s      
+ label:         362 Au                            21 s      
+ label:         363 Au                            21 py     
+ label:         364 Au                            21 pz     
+ label:         365 Au                            21 px     
+ label:         366 Au                            21 py     
+ label:         367 Au                            21 pz     
+ label:         368 Au                            21 px     
+ label:         369 Au                            21 dxy    
+ label:         370 Au                            21 dyz    
+ label:         371 Au                            21 dz2    
+ label:         372 Au                            21 dxz    
+ label:         373 Au                            21 dx2-y2 
+ label:         374 Au                            21 dxy    
+ label:         375 Au                            21 dyz    
+ label:         376 Au                            21 dz2    
+ label:         377 Au                            21 dxz    
+ label:         378 Au                            21 dx2-y2 
+ label:         379 Au                            22 s      
+ label:         380 Au                            22 s      
+ label:         381 Au                            22 py     
+ label:         382 Au                            22 pz     
+ label:         383 Au                            22 px     
+ label:         384 Au                            22 py     
+ label:         385 Au                            22 pz     
+ label:         386 Au                            22 px     
+ label:         387 Au                            22 dxy    
+ label:         388 Au                            22 dyz    
+ label:         389 Au                            22 dz2    
+ label:         390 Au                            22 dxz    
+ label:         391 Au                            22 dx2-y2 
+ label:         392 Au                            22 dxy    
+ label:         393 Au                            22 dyz    
+ label:         394 Au                            22 dz2    
+ label:         395 Au                            22 dxz    
+ label:         396 Au                            22 dx2-y2 
+ label:         397 Au                            23 s      
+ label:         398 Au                            23 s      
+ label:         399 Au                            23 py     
+ label:         400 Au                            23 pz     
+ label:         401 Au                            23 px     
+ label:         402 Au                            23 py     
+ label:         403 Au                            23 pz     
+ label:         404 Au                            23 px     
+ label:         405 Au                            23 dxy    
+ label:         406 Au                            23 dyz    
+ label:         407 Au                            23 dz2    
+ label:         408 Au                            23 dxz    
+ label:         409 Au                            23 dx2-y2 
+ label:         410 Au                            23 dxy    
+ label:         411 Au                            23 dyz    
+ label:         412 Au                            23 dz2    
+ label:         413 Au                            23 dxz    
+ label:         414 Au                            23 dx2-y2 
+ label:         415 Au                            24 s      
+ label:         416 Au                            24 s      
+ label:         417 Au                            24 py     
+ label:         418 Au                            24 pz     
+ label:         419 Au                            24 px     
+ label:         420 Au                            24 py     
+ label:         421 Au                            24 pz     
+ label:         422 Au                            24 px     
+ label:         423 Au                            24 dxy    
+ label:         424 Au                            24 dyz    
+ label:         425 Au                            24 dz2    
+ label:         426 Au                            24 dxz    
+ label:         427 Au                            24 dx2-y2 
+ label:         428 Au                            24 dxy    
+ label:         429 Au                            24 dyz    
+ label:         430 Au                            24 dz2    
+ label:         431 Au                            24 dxz    
+ label:         432 Au                            24 dx2-y2 
+ label:         433 Au                            25 s      
+ label:         434 Au                            25 s      
+ label:         435 Au                            25 py     
+ label:         436 Au                            25 pz     
+ label:         437 Au                            25 px     
+ label:         438 Au                            25 py     
+ label:         439 Au                            25 pz     
+ label:         440 Au                            25 px     
+ label:         441 Au                            25 dxy    
+ label:         442 Au                            25 dyz    
+ label:         443 Au                            25 dz2    
+ label:         444 Au                            25 dxz    
+ label:         445 Au                            25 dx2-y2 
+ label:         446 Au                            25 dxy    
+ label:         447 Au                            25 dyz    
+ label:         448 Au                            25 dz2    
+ label:         449 Au                            25 dxz    
+ label:         450 Au                            25 dx2-y2 
+ label:         451 Au                            26 s      
+ label:         452 Au                            26 s      
+ label:         453 Au                            26 py     
+ label:         454 Au                            26 pz     
+ label:         455 Au                            26 px     
+ label:         456 Au                            26 py     
+ label:         457 Au                            26 pz     
+ label:         458 Au                            26 px     
+ label:         459 Au                            26 dxy    
+ label:         460 Au                            26 dyz    
+ label:         461 Au                            26 dz2    
+ label:         462 Au                            26 dxz    
+ label:         463 Au                            26 dx2-y2 
+ label:         464 Au                            26 dxy    
+ label:         465 Au                            26 dyz    
+ label:         466 Au                            26 dz2    
+ label:         467 Au                            26 dxz    
+ label:         468 Au                            26 dx2-y2 
+ label:         469 Au                            27 s      
+ label:         470 Au                            27 s      
+ label:         471 Au                            27 py     
+ label:         472 Au                            27 pz     
+ label:         473 Au                            27 px     
+ label:         474 Au                            27 py     
+ label:         475 Au                            27 pz     
+ label:         476 Au                            27 px     
+ label:         477 Au                            27 dxy    
+ label:         478 Au                            27 dyz    
+ label:         479 Au                            27 dz2    
+ label:         480 Au                            27 dxz    
+ label:         481 Au                            27 dx2-y2 
+ label:         482 Au                            27 dxy    
+ label:         483 Au                            27 dyz    
+ label:         484 Au                            27 dz2    
+ label:         485 Au                            27 dxz    
+ label:         486 Au                            27 dx2-y2 
+ label:         487 Au                            28 s      
+ label:         488 Au                            28 s      
+ label:         489 Au                            28 py     
+ label:         490 Au                            28 pz     
+ label:         491 Au                            28 px     
+ label:         492 Au                            28 py     
+ label:         493 Au                            28 pz     
+ label:         494 Au                            28 px     
+ label:         495 Au                            28 dxy    
+ label:         496 Au                            28 dyz    
+ label:         497 Au                            28 dz2    
+ label:         498 Au                            28 dxz    
+ label:         499 Au                            28 dx2-y2 
+ label:         500 Au                            28 dxy    
+ label:         501 Au                            28 dyz    
+ label:         502 Au                            28 dz2    
+ label:         503 Au                            28 dxz    
+ label:         504 Au                            28 dx2-y2 
+
+superc: Internal auxiliary supercell:     3 x     7 x     1  =      21
+superc: Number of atoms, orbitals, and projectors:    588 10584  9408
+ 
+* Maximum dynamic memory allocated =     1 MB
+
+siesta:                 ==============================
+SMEAGOL                 Bias step =    0, V =  0.000 Ry
+                            Begin CG move =      0
+                        ==============================
+
+superc: Internal auxiliary supercell:     3 x     7 x     1  =      21
+superc: Number of atoms, orbitals, and projectors:    588 10584  9408
+
+read_ldau The LDA+U method used is from Czyzky PRB 49 14211
+
+iodm: Reading Density Matrix from files
+
+Au.DM                            
+
+InitMesh: MESH =    54 x    32 x   384 =      663552
+InitMesh: Mesh cutoff (required, used) =   300.000   307.324 Ry
+ 
+* Maximum dynamic memory allocated =    32 MB
+siesta: reading saved Hamiltonian
+
+iodm: Reading Density Matrix from files
+
+Au.HM                            
+siesta: found saved Hamiltonian
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =     33740.012940
+siesta: Ena     =      1520.539303
+siesta: Ekin    =     18495.492384
+siesta: Enl     =     -7071.703138
+siesta: DEna    =       458.242516
+siesta: DUscf   =        48.614590
+siesta: DUext   =         0.000000
+siesta: Exc     =    -11619.879714
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Eharris =    -31908.705609
+siesta: Eso     =         0.000000
+siesta: Etot    =    -31908.706998
+siesta: FreeEng =    -31908.706998
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)     dDmax   Ef(eV)
+siesta:    1   -31908.7056   -31908.7070   -31908.7070   0.00018   0.0000
+timer: Routine,Calls,Time,% = IterSCF        1    8321.186  99.50
+siesta:    2   -31908.7075   -31908.7058   -31908.7058   0.00248   0.0000
+siesta:    3   -31908.7066   -31908.7072   -31908.7072   0.00068   0.0000
+siesta:    4   -31908.7064   -31908.7067   -31908.7067   0.00014   0.0000
+siesta:    5   -31908.7051   -31908.7064   -31908.7064   0.00035   0.0000
+siesta:    6   -31908.7051   -31908.7051   -31908.7051   0.00006   0.0000
+siesta:    7   -31908.7053   -31908.7051   -31908.7051   0.00005   0.0000
+siesta:    8   -31908.7052   -31908.7052   -31908.7052   0.00006   0.0000
+siesta:    9   -31908.7054   -31908.7052   -31908.7052   0.00006   0.0000
+siesta:   10   -31908.7054   -31908.7054   -31908.7054   0.00004   0.0000
+siesta:   11   -31908.7053   -31908.7054   -31908.7054   0.00003   0.0000
+siesta:   12   -31908.7054   -31908.7053   -31908.7053   0.00020   0.0000
+siesta:   13   -31908.7054   -31908.7054   -31908.7054   0.00003   0.0000
+siesta:   14   -31908.7054   -31908.7054   -31908.7054   0.00002   0.0000
+siesta:   15   -31908.7054   -31908.7054   -31908.7054   0.00002   0.0000
+siesta:   16   -31908.7054   -31908.7054   -31908.7054   0.00001   0.0000
+ Calculating transmission coefficient
+
+siesta: E_KS(eV) =           -31908.7054
+
+siesta: E_KS - E_eggbox =    -31908.7054
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.007664   -0.009537    0.795349
+----------------------------------------
+ Max    6.297904
+ Res    1.321187    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    6.297904    constrained
+ 
+* Maximum dynamic memory allocated =    45 MB
+
+coxmol: Writing XMOL coordinates into file Au.xyz                  
+ siesta: ERROR: PDOS implemented only with diagon
+
+siesta: Program's energy decomposition (eV):
+siesta:-Eions   =  -33740.012940
+siesta: Ena     =    1520.539303
+siesta: Ekin    =   18495.450622
+siesta: Enl     =   -7071.682802
+siesta: DEna    =     458.255134
+siesta: DUscf   =      48.616952
+siesta: DUext   =       0.000000
+siesta: Exc     =  -11619.871693
+siesta: eta*DQ  =       0.000000
+siesta: Emadel  =       0.000000
+siesta: Ekinion =       0.000000
+siesta: Eharris =  -31908.705425
+siesta: Eso     =       0.000000
+siesta: Etot    =  -31908.705423
+siesta: FreeEng =  -31908.705423
+
+siesta: Final energy (eV):
+siesta:       Kinetic =   18495.450622
+siesta:       Hartree =   10930.655671
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =  -11619.871693
+siesta:  Ion-electron =  -35693.262916
+siesta:       Ion-ion =  -14021.677107
+siesta:       Ekinion =       0.000000
+siesta:         Total =  -31908.705423
+
+siesta: Atomic forces (eV/Ang):
+siesta:    1   -0.000204   -0.002261   -0.145250
+siesta:    2    0.003796   -0.000002   -0.145258
+siesta:    3    0.011153   -0.000010   -0.199971
+siesta:    4    0.011103   -0.000705   -0.199759
+siesta:    5   -0.004201   -0.000003   -0.671493
+siesta:    6   -0.004337    0.000350   -0.671408
+siesta:    7    0.008545    0.000375    0.189331
+siesta:    8    0.008228   -0.000013    0.189376
+siesta:    9   -0.003090   -0.000005   -0.185675
+siesta:   10   -0.003021   -0.000652   -0.185886
+siesta:   11   -0.007810    0.000007   -0.230797
+siesta:   12   -0.010902   -0.002134   -0.230843
+siesta:   13   -0.013769   -0.000659   -5.669743
+siesta:   14   -0.013723    0.000009   -5.669976
+siesta:   15    0.017984    0.000004    6.297904
+siesta:   16    0.018103   -0.000244    6.297898
+siesta:   17    0.000205   -0.000652    0.000388
+siesta:   18    0.000124    0.000003    0.000587
+siesta:   19   -0.007829   -0.000003   -0.046394
+siesta:   20   -0.007964   -0.002281   -0.046377
+siesta:   21   -0.002250   -0.000015    0.426129
+siesta:   22   -0.002296   -0.000620    0.426351
+siesta:   23    0.011130    0.000365   -0.097711
+siesta:   24    0.011172   -0.000010   -0.097796
+siesta:   25   -0.002585   -0.000001    0.815148
+siesta:   26   -0.002380    0.000358    0.815084
+siesta:   27   -0.011453   -0.000010   -0.084158
+siesta:   28   -0.011391   -0.000728   -0.084354
+siesta: ----------------------------------------
+siesta:  Tot   -0.007664   -0.009537    0.795349
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.793640    0.000001    0.002388
+siesta:     0.000001    0.788905    0.000001
+siesta:     0.002486    0.000001    0.755400
+
+siesta: Cell volume =        548.235801 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:          -0.00848773         -0.00922875  Ry/Bohr**3
+siesta:          -0.77931483         -0.84735282  eV/Ang**3
+siesta:       -1248.61351245      -1357.62356443  kBar
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000000
+siesta: Spin vector =    0.000000    0.000000    0.000000
+siesta: No SpinPolK block detected...
+
+siesta: Electric dipole (a.u.)  =    0.000000    0.000000   -1.505765
+siesta: Electric dipole (Debye) =    0.000000    0.000000   -3.827276
+* Maximum dynamic memory allocated : Node    2 =    32 MB
+* Maximum dynamic memory allocated : Node    3 =    28 MB
+* Maximum dynamic memory allocated : Node    6 =    32 MB
+ 
+* Maximum dynamic memory allocated : Node    0 =    45 MB
+* Maximum dynamic memory allocated : Node    1 =    32 MB
+* Maximum dynamic memory allocated : Node    4 =    31 MB
+* Maximum dynamic memory allocated : Node    5 =    32 MB
+* Maximum dynamic memory allocated : Node    7 =    32 MB
+* Maximum dynamic memory allocated : Node   12 =    31 MB
+* Maximum dynamic memory allocated : Node    9 =    32 MB
+* Maximum dynamic memory allocated : Node    8 =    32 MB
+* Maximum dynamic memory allocated : Node   10 =    32 MB
+* Maximum dynamic memory allocated : Node   13 =    33 MB
+* Maximum dynamic memory allocated : Node   14 =    32 MB
+* Maximum dynamic memory allocated : Node   11 =    29 MB
+* Maximum dynamic memory allocated : Node   15 =    32 MB
+* Maximum dynamic memory allocated : Node   20 =    31 MB
+* Maximum dynamic memory allocated : Node   17 =    32 MB
+* Maximum dynamic memory allocated : Node   18 =    32 MB
+* Maximum dynamic memory allocated : Node   16 =    32 MB
+* Maximum dynamic memory allocated : Node   19 =    29 MB
+* Maximum dynamic memory allocated : Node   21 =    32 MB
+* Maximum dynamic memory allocated : Node   22 =    32 MB
+* Maximum dynamic memory allocated : Node   23 =    32 MB
+* Maximum dynamic memory allocated : Node   30 =    32 MB
+* Maximum memory occured during matrixMtoO                    
+* Maximum dynamic memory allocated : Node   25 =    32 MB
+* Maximum dynamic memory allocated : Node   26 =    32 MB
+* Maximum dynamic memory allocated : Node   24 =    32 MB
+* Maximum dynamic memory allocated : Node   31 =    31 MB
+* Maximum dynamic memory allocated : Node   29 =    32 MB
+* Maximum dynamic memory allocated : Node   28 =    30 MB
+* Maximum dynamic memory allocated : Node   27 =    28 MB
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1   45032.933   45032.933   100.00
+timer:  Setup             1       9.775       9.775     0.02
+timer:  bands             1       0.041       0.041     0.00
+timer:  writewave         1       0.046       0.046     0.00
+timer:  KSV_init          1       0.031       0.031     0.00
+timer:  IterMD            1   45007.380   45007.380    99.94
+timer:  hsparse           2       4.322       8.644     0.02
+timer:  overfsm           2       6.717      13.434     0.03
+timer:  IterSCF          17    2645.623   44975.585    99.87
+timer:  kinefsm           2       6.368      12.735     0.03
+timer:  nlefsm            2      46.921      93.842     0.21
+timer:  DHSCF            18      21.980     395.645     0.88
+timer:  DHSCF1            1       3.194       3.194     0.01
+timer:  DHSCF2            1      73.429      73.429     0.16
+timer:  REORD           222       0.001       0.147     0.00
+timer:  POISON           19       1.319      25.057     0.06
+timer:  DHSCF3           18      16.859     303.459     0.67
+timer:  rhoofd           18       4.953      89.152     0.20
+timer:  CELLXC           18       0.300       5.404     0.01
+timer:  vmat             17       9.476     161.089     0.36
+timer:  emtrans          17    2612.033   44404.558    98.60
+timer:  NEGFK           204     215.581   43978.593    97.66
+timer:  NEGFK_su        204      30.179    6156.560    13.67
+timer:  NEGFK_imag      192     162.514   31202.763    69.29
+timer:  NEGFK_col       192       2.751     528.206     1.17
+timer:  DHSCF4            1      15.067      15.067     0.03
+timer:  dfscf             1       8.616       8.616     0.02
+timer:  TRANSM           12     355.425    4265.104     9.47
+timer:  CURRENT          12       0.902      10.824     0.02
+  
+>> End of run:  13-JUL-2016   8:21:51

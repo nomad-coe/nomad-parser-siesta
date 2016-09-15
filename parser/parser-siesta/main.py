@@ -376,6 +376,19 @@ class SiestaContext(object):
         data = self.data
         meta = self.system_meta
 
+        latvec = data.pop('block_lattice_vectors', None)
+        if latvec is not None:
+            latvec = latvec.astype(float)
+            size = self.special_input_vars['LatticeConstant']
+            size, unit = size.split()
+            #assert unit == 'ang', unit
+            unit = {'ang': 'angstrom',
+                    'Bohr': 'bohr'}[unit]
+
+            size = float(size)
+            size = convert_unit(size, unit)
+            meta['simulation_cell'] = latvec * size
+
         cell = data.pop('outcell_ang', None)
         cell2 = data.pop('auto_unit_cell_ang', None)
         if cell2 is not None:
@@ -425,6 +438,8 @@ class SiestaContext(object):
 
         for key, value in meta.items():
             backend.addArrayValues(key, value)
+
+        assert len(self.data) == 0, self.data
 
     def onClose_section_run(self, backend, gindex, section):
         pass

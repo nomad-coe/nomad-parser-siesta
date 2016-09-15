@@ -3,6 +3,7 @@ import os
 import sys
 import setup_paths
 from glob import glob
+import re
 
 import numpy as np
 from ase.data import chemical_symbols
@@ -29,8 +30,6 @@ parser_info = {'name':'siesta-parser', 'version': '1.0'}
 def siesta_energy(title, meta, **kwargs):
     return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S+)' % (title, meta),
               name=meta, **kwargs)
-
-import re
 
 def line_iter(fd, linepattern = re.compile(r'\s*([^#]+)')):
     # Strip off comments and whitespace, return only non-empty strings
@@ -87,123 +86,6 @@ def get_input_metadata(inputvars_file, use_new_format):
                         addvar(tokens)
 
     return inputvars, blocks
-
-
-def ArraySM(header, row, build, **kwargs):
-
-    class LineBuf:
-        def __init__(self):
-            self.lines = []
-
-        def adhoc_addrow(self, parser):
-            line = parser.fIn.readline()
-            self.lines.append(line)
-
-        def _build_array(self, parser):
-            build(parser.backend.superBackend, self.lines)
-            self.lines = []
-
-    linebuf = LineBuf()
-    sm = SM(header,
-            name=kwargs.pop('name', 'startarray'),
-            required=True,
-            subFlags=SM.SubFlags.Sequenced,
-            subMatchers=[
-                SM(row, name='array', repeats=True,
-                   forwardMatch=True,
-                   adHoc=linebuf.adhoc_addrow, required=True),
-                SM(r'', endReStr='', adHoc=linebuf._build_array, name='endarray',
-                   forwardMatch=True)
-            ],
-            **kwargs)
-    return sm
-
-
-def errprint(func):
-    def wrapper(backend, lines):
-        try:
-            func(backend, lines)
-        except Exception:
-            print('Error in %s: %d lines' % (func.__name__,
-                                             len(lines)))
-            for line in lines:
-                print(line, file=sys.stderr)
-            raise
-    return wrapper
-
-def tokenize(lines):
-    return np.array([line.split() for line in lines], object)
-
-
-#@errprint
-#def build_cell(backend, lines):
-#    cell = tokenize(lines).astype(float)
-#    backend.addArrayValues('simulation_cell', convert_unit(cell, 'angstrom'))
-
-@errprint
-def get_forces(backend, lines):
-    if len(lines) == 0:
-        # Siesta sometimes, stupidly, writes a Forces header.
-        # It then proceeds to not write any forces.
-        # Thus we ignore that silliness
-        return
-    forces = tokenize(lines)[:, 1:].astype(float)
-    assert forces.shape[1] == 3, forces.shape
-    backend.addArrayValues('atom_forces', convert_unit(forces, 'eV/angstrom'))
-
-@errprint
-def get_stress(backend, lines):
-    stress = tokenize(lines)[:, 1:].astype(float)
-    assert stress.shape == (3, 3)
-    backend.addArrayValues('stress_tensor', convert_unit(stress, 'eV/angstrom**3'))
-
-@errprint
-def get_dipole(backend, lines):
-    assert len(lines) == 1
-    dipole = tokenize(lines)[:, -3:].astype(float)
-    # Hmm.  There is no common metadata for dipole moment for some reason.
-    #print('dipole', dipole)
-
-#def get_array(metaname, dtype, istart=0, iend=None, unit=None):
-#    @errprint
-#    def buildarray(backend, lines):
-#        arr = tokenize(lines)
-#        if iend is None:
-#            arr = arr[:, istart:]
-#        else:
-#            arr = arr[:, istart:iend]
-#        arr = arr.astype(dtype)
-#        if unit is not None:
-#            arr = convert_unit(arr, unit)
-#        backend.addArrayValues(metaname, arr)
-#    return buildarray
-def get_array(metaname, dtype=float, istart=0, iend=None, unit=None,
-              storage=None):
-    @errprint
-    def buildarray(backend, lines):
-        arr = tokenize(lines)
-        if iend is None:
-            arr = arr[:, istart:]
-        else:
-            arr = arr[:, istart:iend]
-        arr = arr.astype(dtype)
-        if unit is not None:
-            arr = convert_unit(arr, unit)
-        if storage is not None:
-            storage[metaname] = arr
-        else:
-            backend.addArrayValues(metaname, arr)
-    return buildarray
-
-
-
-@errprint
-def add_positions_and_labels(backend, lines):
-    matrix = tokenize(lines)
-    positions = matrix[:, 1:4].astype(float)
-    labels = np.array([chemical_symbols[i] for i in matrix[:, 5].astype(int)])
-    backend.addArrayValues('atom_positions', convert_unit(positions, 'bohr'))
-    backend.addArrayValues('atom_labels', labels)
 
 
 """
@@ -439,6 +321,9 @@ class SiestaContext(object):
         for key, value in meta.items():
             backend.addArrayValues(key, value)
 
+        backend.addArrayValues('configuration_periodic_dimensions',
+                               np.ones(3, bool))
+
         assert len(self.data) == 0, self.data
 
     def onClose_section_run(self, backend, gindex, section):
@@ -665,9 +550,6 @@ mainFileDescription = SM(
     r'',
     name='root',
     #weak=True,
-    #fixedStartValues={'program_name': 'siesta',
-    #                  'program_basis_set_type': 'numeric AOs',
-    #                  'configuration_periodic_dimensions': np.ones(3, bool)},
     sections=['section_run'],
     subMatchers=[
         get_header_matcher(),

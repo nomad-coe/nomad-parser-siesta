@@ -123,7 +123,7 @@ class SiestaContext(object):
         self.special_input_vars = {}
 
         self.system_meta = {}
-        self.section_refs = {}  # name: gindex
+        self.section_refs = {}  # {name: gindex, ...}
 
     def multi_sm0(self, pattern, var, dtypes=None, **kwargs):
         pat = re.compile(pattern)
@@ -337,6 +337,12 @@ class SiestaContext(object):
             forces = convert_unit(forces, 'eV/angstrom')
             backend.addArrayValues('atom_forces_free_raw', forces)
 
+        stress = self.data.pop('stress_tensor_ev_ang', None)
+        if stress is not None:
+            stress = stress.astype(float)
+            stress = convert_unit(stress, 'eV/angstrom^3')
+            backend.addArrayValues('stress_tensor', stress)
+
         backend.addValue('single_configuration_to_calculation_method_ref',
                          self.section_refs['method'])
         backend.addValue('single_configuration_calculation_to_system_ref',
@@ -445,6 +451,7 @@ class SiestaContext(object):
 
         if hasattr(endmatcher, 'swapcase'):
             endmatcher = SM(endmatcher,
+                            endReStr='',
                             forwardMatch=True,
                             name='%s-end' % name,
                             adHoc=savearray)
@@ -529,8 +536,8 @@ step_pattern = r'\s*(Single-point calculation|Begin[^=]+=\s*\d+)'
 def get_step_matcher():
     m = SM(step_pattern,
            name='step',
-           #repeats=True,
            sections=['section_single_configuration_calculation'],
+           subFlags=SM.SubFlags.Unordered,
            subMatchers=[
                SM(r'\s*=============+', name='====='),
                context.multi_sm('outcoord_ang',
@@ -539,9 +546,14 @@ def get_step_matcher():
                context.multi_sm('outcell_ang',
                                 r'outcell: Unit cell vectors \(Ang\):',
                                 r'\s*(\S+)\s*(\S+)\s*(\S+)'),
+               SM(r'siesta: E_KS\(eV\)\s*=\s*(?P<energy_total__eV>\S+)',
+                  name='etotal'),
                context.multi_sm('forces_ev_ang',
                                 r'siesta: Atomic forces \(eV/Ang\):',
-                                r'\s+\d+\s*(\S+)\s*(\S+)\s*(\S+)')
+                                r'\s+\d+\s*(\S+)\s*(\S+)\s*(\S+)'),
+               context.multi_sm('stress_tensor_ev_ang',
+                                r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
+                                r'siesta:\s*(\S+)\s*(\S+)\s*(\S+)'),
            ])
     return m
 

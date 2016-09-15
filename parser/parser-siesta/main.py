@@ -452,6 +452,11 @@ class SiestaContext(object):
             forces = convert_unit(forces, 'eV/angstrom')
             backend.addArrayValues('atom_forces_free_raw', forces)
 
+        backend.addValue('single_configuration_to_calculation_method_ref',
+                         self.section_refs['method'])
+        backend.addValue('single_configuration_calculation_to_system_ref',
+                         self.section_refs['system'])
+
     def onClose_x_siesta_section_input(self, backend, gindex, section):
         inputvars_file = self.files.get('inputlog')
         if inputvars_file is None:

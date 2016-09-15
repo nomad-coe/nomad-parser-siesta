@@ -6,6 +6,7 @@ from glob import glob
 
 import numpy as np
 from ase.data import chemical_symbols
+from ase import Atoms
 
 from nomadcore.simple_parser import (mainFunction, SimpleMatcher as SM,
                                      AncillaryParser)
@@ -14,6 +15,7 @@ from nomadcore.unit_conversion.unit_conversion \
     import register_userdefined_quantity, convert_unit
 
 from util import floating, integer
+from inputvars import varlist
 
 metaInfoPath = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../../../../nomad-meta-info/meta_info/nomad_meta_info/siesta.nomadmetainfo.json"))
 metaInfoEnv, warnings = loadJsonFile(filePath=metaInfoPath,
@@ -28,26 +30,63 @@ def siesta_energy(title, meta, **kwargs):
     return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S+)' % (title, meta),
               name=meta, **kwargs)
 
+import re
 
-def get_input_metadata(inputvars_file):
+def line_iter(fd, linepattern = re.compile(r'\s*([^#]+)')):
+    # Strip off comments and whitespace, return only non-empty strings
+    for line in fd:
+        match = linepattern.match(line)
+        if match:
+            line = match.group().rstrip()
+            if line:
+                yield line
+
+
+def get_input_metadata(inputvars_file, use_new_format):
     inputvars = {}
+    blocks = {}
+
+    varset = set(varlist)
+
+    def addvar(tokens):
+        name = tokens[0]
+        val = ' '.join(tokens[1:])
+        if name in varset:
+            inputvars[name] = val
+
+    currentblock = None
+
     with open(inputvars_file) as fd:
-        for line in fd:
-            if not line or line.startswith('%') or line[0].isspace():
-                continue
+        lines = line_iter(fd)
 
-            line = line.split('#', 1)[0]  # Strip off comment
+        for line in lines:
             tokens = line.split()
-            if not tokens:
-                continue
-            tokens = line.split()
-            if not tokens:
-                continue
+            assert len(tokens) > 0
 
-            metaname = 'x_siesta_input_%s' % tokens[0]
-            value = ' '.join(tokens[1:])
-            inputvars[metaname] = value
-    return inputvars
+            if tokens[0].startswith('%'):
+                if tokens[0].lower() == '%block':
+                    #assert currentblock == None
+                    currentblock = []
+                    blocks[tokens[1]] = currentblock
+                elif tokens[0].lower() == '%endblock':
+                    currentblock = None
+                else:
+                    raise ValueError('Unknown: %s' % tokens[0])
+            else:
+                if use_new_format:
+                    if line.startswith(' '):
+                        assert currentblock is not None
+                        currentblock.append(tokens)
+                    else:
+                        currentblock = None
+                        addvar(tokens)
+                else:
+                    if currentblock is not None:
+                        currentblock.append(tokens)
+                    else:
+                        addvar(tokens)
+
+    return inputvars, blocks
 
 
 def ArraySM(header, row, build, **kwargs):
@@ -125,7 +164,21 @@ def get_dipole(backend, lines):
     # Hmm.  There is no common metadata for dipole moment for some reason.
     #print('dipole', dipole)
 
-def get_array(metaname, dtype, istart=0, iend=None, unit=None):
+#def get_array(metaname, dtype, istart=0, iend=None, unit=None):
+#    @errprint
+#    def buildarray(backend, lines):
+#        arr = tokenize(lines)
+#        if iend is None:
+#            arr = arr[:, istart:]
+#        else:
+#            arr = arr[:, istart:iend]
+#        arr = arr.astype(dtype)
+#        if unit is not None:
+#            arr = convert_unit(arr, unit)
+#        backend.addArrayValues(metaname, arr)
+#    return buildarray
+def get_array(metaname, dtype=float, istart=0, iend=None, unit=None,
+              storage=None):
     @errprint
     def buildarray(backend, lines):
         arr = tokenize(lines)
@@ -136,8 +189,13 @@ def get_array(metaname, dtype, istart=0, iend=None, unit=None):
         arr = arr.astype(dtype)
         if unit is not None:
             arr = convert_unit(arr, unit)
-        backend.addArrayValues(metaname, arr)
+        if storage is not None:
+            storage[metaname] = arr
+        else:
+            backend.addArrayValues(metaname, arr)
     return buildarray
+
+
 
 @errprint
 def add_positions_and_labels(backend, lines):
@@ -165,47 +223,113 @@ H                     1                    # Species label, number of l-shells
 """
 
 
-def locate_files(dirname, label):
-    files = {}
-
-    for fileid in ['EIG', 'KP']:
-        path = os.path.join(dirname, '%s.%s' % (label, fileid))
-        if os.path.isfile(path):
-            files[fileid] = path
-        # Warn if files are not present?
-        #
-        # Also: input file
-        #       input parser logfile
-        #
-        # what else?  We already get force/stress/positions from stdout.
-    inplogfiles = glob('%s/fdf-*.log' % dirname)
-    if inplogfiles:
-        inplogfiles.sort()
-        files['inputlog'] = inplogfiles[-1]
-    return files
 
 class SiestaContext(object):
     def __init__(self):
-        self._is_last_configuration = False
-        self.label = None
-        self.fname = None
+        self.fname = None  # The file that we are parsing
         self.dirname = None  # Base directory of calculations
-        self.files = None
-        self.parser = None
+        #self.parser = None  # The parser object
+        self.format = None  # 'old' or 'new'; when parsing version
+
+        # label and things determined by label
+        self.label = None
+        self.files = None  # Dict of files
+        self.blocks = None  # Dict of input blocks (coords, cell, etc.)
+
+        self._is_last_configuration = False  # XXX
+        self.data = {}
+        self.special_input_vars = {}
+
+        self.system_meta = {}
+        self.section_refs = {}  # name: gindex
+
+    def multi_sm0(self, pattern, var, dtypes=None, **kwargs):
+        pat = re.compile(pattern)
+        ngroups = pat.groups
+        if dtypes is None:
+            dtypes = [float] * ngroups
+        else:
+            assert len(dtypes) == ngroups
+
+        class LineBuf:
+            def __init__(self, ctxt):
+                self.lines = []
+                self.ctxt = ctxt
+
+            def adhoc_addrow(self, parser):
+                line = parser.fIn.readline()
+                print('LINE', line)
+                groups = pat.match(line).groups()
+                results = [dtype(group)
+                           for dtype, group in zip(dtypes, groups)]
+                self.lines.append(results)
+
+            def _build_array(self, parser):
+                arr = np.array(self.lines)
+                self.ctxt.data[var] = arr
+                print('SET', var, arr)
+                ksdfjksjdf
+                self.lines = []
+
+        linebuf = LineBuf(self)
+        sm = SM(r'', weak=True,
+                forwardMatch=True,
+                subFlags=SM.SubFlags.Sequenced,
+                subMatchers=[
+                    SM(pattern,
+                       repeats=True,
+                       forwardMatch=True,
+                       required=True,
+                       adHoc=linebuf.adhoc_addrow),
+                    SM(r'', endReStr='', adHoc=linebuf._build_array,
+                       name='endarray',
+                       forwardMatch=True)
+                ], **kwargs)
+        return sm
+
+    def adhoc_format_new(self, parser):
+        assert self.format is None
+        self.format = 'new'
+
+    def adhoc_format_old(self, parser):
+        assert self.format is None
+        self.format = 'old'
 
     def adhoc_set_label(self, parser):
         # ASSUMPTION: the parser fIn is in the 'root' of whatever was uploaded.
         # This may not be true.  Figure out how to do this in general.
         line = parser.fIn.readline()
         assert line.startswith('reinit: System Label:')
-        self.label = line.split()[-1]
-        self.files = locate_files(self.dirname, self.label)
+        self.label = label = line.split()[-1]
+        dirname = self.dirname
+
+        files = {}
+
+        for fileid in ['EIG', 'KP']:
+            path = os.path.join(dirname, '%s.%s' % (label, fileid))
+            if os.path.isfile(path):
+                files[fileid] = path
+            # Warn if files are not present?
+            #
+            # Also: input file
+            #       input parser logfile
+            #
+            # what else?  We already get force/stress/positions from stdout.
+        if self.format == 'new':
+            inplogfiles = glob('%s/fdf-*.log' % dirname)
+            if inplogfiles:
+                inplogfiles.sort()
+                files['inputlog'] = inplogfiles[-1]
+        else:
+            assert self.format == 'old', self.format
+            files['inputlog'] = os.path.join(dirname, 'out.fdf')
+        self.files = files
 
     def startedParsing(self, fname, parser):
         self.fname = fname
         path = os.path.abspath(fname)
         self.dirname, _ = os.path.split(path)
-        self.parser = parser
+        #self.parser = parser
 
     def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
         authors = section['x_siesta_xc_authors']
@@ -219,7 +343,7 @@ class SiestaContext(object):
                    'PZ': ('LDA_X', 'LDA_C_PZ'),
                    'PW92': ('LDA_X', 'LDA_C_PW'),
                    #'PW91': '',
-                   'PBE': ('LDA_X_PBE', 'LDA_C_PBE'),
+                   'PBE': ('GGA_X_PBE', 'GGA_C_PBE'),
                    'revPBE': ('GGA_X_PBE_R', 'GGA_C_PBE'),
                    'RPBE': ('GGA_X_RPBE', 'GGA_C_PBE'),
                    #'WC': ('GGA_X_WC', ),
@@ -242,14 +366,93 @@ class SiestaContext(object):
     def onClose_section_eigenvalues(self, backend, gindex, section):
         self.read_eigenvalues(backend)
 
+    def onOpen_section_method(self, backend, gindex, section):
+        self.section_refs['method'] = gindex
+
+    def onOpen_section_system(self, backend, gindex, section):
+        self.section_refs['system'] = gindex
+
+    def onClose_section_system(self, backend, gindex, section):
+        data = self.data
+        meta = self.system_meta
+
+        cell = data.pop('outcell_ang', None)
+        cell2 = data.pop('auto_unit_cell_ang', None)
+        if cell2 is not None:
+            cell = cell2
+
+        if cell is not None:
+            cell = cell.astype(float)
+            cell = convert_unit(cell, 'angstrom')
+            meta['simulation_cell'] = cell
+
+        labels = data.pop('block_species_label', None)
+        if labels is not None:
+            assert labels.shape[1] == 1
+            labels = labels[:, 0]
+            self.labels = labels
+
+        block_coords_and_species = data.pop('block_coords_and_species', None)
+        coords_and_species = data.pop('coords_and_species', None)
+
+        if coords_and_species is None:
+            coords_and_species = block_coords_and_species
+
+        if coords_and_species is not None:
+            coords = coords_and_species[:, :3].astype(float)
+
+            unit = self.special_input_vars['AtomicCoordinatesFormat']
+            if unit == 'Ang':
+                coords = convert_unit(coords, 'angstrom')
+            elif unit in ['Fractional', 'ScaledCartesian']:
+                a = Atoms('%dX' % len(coords),
+                          scaled_positions=coords,
+                          cell=meta['simulation_cell'])
+                coords = a.positions
+            else:
+                raise ValueError('Unknown: %s' % unit)
+            meta['atom_positions'] = coords
+
+            species_index = coords_and_species[:, 3].astype(int)
+
+            atom_labels = np.array([self.labels[i - 1] for i in species_index])
+            meta['atom_labels'] = atom_labels
+
+        positions = self.data.pop('outcoord_ang', None)
+        if positions is not None:
+            positions = convert_unit(positions.astype(float), 'angstrom')
+            meta['atom_positions'] = positions
+
+        for key, value in meta.items():
+            backend.addArrayValues(key, value)
+
+    def onClose_section_run(self, backend, gindex, section):
+        pass
+
+    def onClose_section_single_configuration_calculation(self, backend,
+                                                         gindex, section):
+        forces = self.data.pop('forces_ev_ang', None)
+        if forces is not None:
+            forces = forces.astype(float)
+            forces = convert_unit(forces, 'eV/angstrom')
+            backend.addArrayValues('atom_forces_free_raw', forces)
+
     def onClose_x_siesta_section_input(self, backend, gindex, section):
         inputvars_file = self.files.get('inputlog')
         if inputvars_file is None:
             return
 
-        inputvars = get_input_metadata(inputvars_file)
-        for metaname, value in inputvars.items():
-            backend.addValue(metaname, value)
+        inputvars, blocks = get_input_metadata(inputvars_file,
+                                               self.format == 'new')
+        for varname, value in inputvars.items():
+            backend.addValue('x_siesta_input_%s' % varname, value)
+
+        for special_name in ['LatticeConstant',
+                             'AtomicCoordinatesFormat',
+                             'AtomicCoordinatesFormatOut']:
+            self.special_input_vars[special_name] = inputvars.get(special_name)
+
+        self.blocks = blocks
 
     def read_eigenvalues(self, backend):
         eigfile = self.files.get('EIG')
@@ -296,126 +499,177 @@ class SiestaContext(object):
         # XXX metadata for Fermi level?
         # k-point weights?
 
+    def save_array(self, key, dtype=float, istart=0, iend=None,
+                   unit=None):
+        return get_array(key, dtype=dtype, istart=istart, iend=iend, unit=unit,
+                         storage=self.data)
+
+    def multi_sm(self, name, startpattern, linepattern, endmatcher=None,
+                 conflict='fail',  # 'fail', 'keep', 'overwrite'
+                 *args, **kwargs):
+
+        pat = re.compile(linepattern)  # XXX how to get compiled pattern?
+        ngroups = pat.groups
+
+        allgroups = []
+        def addline(parser):
+            line = parser.fIn.readline()
+            match = pat.match(line)
+            assert match is not None
+            thislinegroups = match.groups()
+            assert len(thislinegroups) == ngroups
+            allgroups.append(thislinegroups)
+
+        def savearray(parser):
+            arr = np.array(allgroups, dtype=object)
+            del allgroups[:]
+            if name in self.data:
+                if conflict == 'fail':
+                    raise ValueError('grrr %s %s' % (name, self.data[name]))
+                elif conflict == 'keep':
+                    return  # Do not save array
+                elif conflict == 'overwrite':
+                    pass
+                else:
+                    raise ValueError('Unknown keyword %s' % conflict)
+            if arr.size > 0:
+                self.data[name] = arr
+
+        if endmatcher is None:
+            endmatcher = r'.*'
+
+        if hasattr(endmatcher, 'swapcase'):
+            endmatcher = SM(endmatcher,
+                            forwardMatch=True,
+                            name='%s-end' % name,
+                            adHoc=savearray)
+
+        sm = SM(startpattern,
+                name=name,
+                subMatchers=[
+                    SM(linepattern,
+                       name='%s-line' % name,
+                       repeats=True,
+                       forwardMatch=True,
+                       required=True,
+                       adHoc=addline),
+                    endmatcher,
+                ], **kwargs)
+        return sm
 
 context = SiestaContext()
 
-from inputvars import inputvars
-
-input_vars_description = SM(
-    name='root',
-    weak=True,
-    startReStr='',
-    subMatchers= [
-        SM(r'%{0}\s+(?P<x_siesta_input_{0}>\S+)'.format(inputvar),
-           name=inputvar)
-        for inputvar in inputvars]
-    )
-
-infoFileDescription = SM(
-    name='root',
-    weak=True,
-    startReStr='',
-    # In SIESTA, the calculations are always periodic
-    fixedStartValues={'program_name': 'siesta',
-                      'configuration_periodic_dimensions': np.ones(3, bool)},
-    sections=['section_run'],
-    #subFlags=SM.SubFlags.Sequenced,  # sequenced or not?
-    subMatchers=[
-        SM(r'Siesta Version: siesta-(?P<program_version>\S+)',
-           name='version'),
-        SM(r'SIESTA\s*(?P<program_version>.+)',
-           name='alt-version'),
-        SM(r'Architecture\s*:\s*(?P<x_siesta_arch>.+)', name='arch'),
-        SM(r'Compiler flags\s*:\s*(?P<x_siesta_compilerflags>.+)',
-           name='flags'),
-        SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
-           name='xc authors',
-           fixedStartValues={'x_siesta_xc_authors': 'CA'},
-           sections=['section_method', 'x_siesta_section_xc_authors']),
-        SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)',
-           name='syslabel', forwardMatch=True,
-           sections=['x_siesta_section_input'],
-           adHoc=context.adhoc_set_label),
-        SM(r'\s*Single-point calculation|\s*Begin \S+ opt\.',
-           name='singleconfig',
-           repeats=True,
-           # XXX some of the matchers should not be in single config calculation
-           sections=['section_single_configuration_calculation',
-                     'section_system'],
-           subFlags=SM.SubFlags.Sequenced,
+def get_header_matcher():
+    m = SM(r'',
+           name='header',
+           fixedStartValues={'program_name': 'Siesta',
+                             'program_basis_set_type': 'numeric AOs'},
+           weak=True,
+           forwardMatch=True,
            subMatchers=[
-               SM(r'', weak=True, forwardMatch=True, name='system section',
-                  subMatchers=[
-                      ArraySM(r'siesta: Atomic coordinates \(Bohr\) and species',
-                              r'siesta:\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+',
-                              add_positions_and_labels),
-                      ArraySM(r'siesta: Automatic unit cell vectors \(Ang\):',
-                              r'siesta:\s*\S+\s*\S+\s*\S+',
-                              get_array('simulation_cell', float, 1, 4, unit='angstrom'))
-                  ]),
-               ArraySM(r'outcoor: Atomic coordinates \(Ang\):',
-                       r'\s*\S+\s*\S+\s*\S+',
-                       get_array('atom_positions', float, 0, 3, unit='angstrom')),
-               SM(r'\s*scf:\s*iscf', name='scf', required=True),
-               SM(r'SCF cycle converged after\s*%s\s*iterations'
-                  % integer('number_of_scf_iterations'), name='scf-iterations'),
-               SM(r'siesta: E_KS\(eV\)\s*=\s*%s' % floating('energy_free__eV'),
-                  name='E_KS'),
-               ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
-                       r'\s*[0-9]+\s+\S+\s+\S+\s+\S+',
-                       get_forces, name='forces-in-opt-step'),
-               SM(r'Target enthalpy', name='end-singleconfig'),
-               # As we get past the last singleconfig, we need to add all the stuff
-               # that pertains only to the last one, basically eigs and occs.
-               # Therefore we read a bit past the last config and try to trigger
-               # this as appropriate.
-               SM(r'', weak=True, name='After singleconfigs',
-                  subFlags=SM.SubFlags.Sequenced,
-                  subMatchers=[
-                   # There is a stupid header in the middle of nowhere which is
-                   # equal to a later header, so we swallow it here:
-                   #SM(r'siesta: Atomic forces \(eV/Ang\):'),
-                      SM(r'siesta: Program\'s energy decomposition \(eV\):',
-                         name='energy header 1',
-                         weak=True,
-                         subMatchers=[
-                             siesta_energy('FreeEng', 'energy_free')
-                         ]),
-                      SM(r'siesta: Final energy \(eV\):',
-                         name='energy header 2',
-                         subMatchers=[
-                             siesta_energy('Band Struct\.', 'energy_sum_eigenvalues'),
-                             siesta_energy('Kinetic', 'electronic_kinetic_energy'),
-                             siesta_energy('Hartree', 'energy_electrostatic'),
-                             #siesta_energy('Ext\. field', ''),
-                             siesta_energy('Exch\.-corr\.', 'energy_XC'),
-                             #siesta_energy('Ion-electron', ''),
-                             #siesta_energy('Ion-Ion', ''),
-                             #siesta_energy('Ekinion', ''),
-                             siesta_energy('Total', 'energy_total'),
-                             SM(r'', weak=True, name='trigger_readeig',
-                                sections=['section_eigenvalues']),
-                         ]),
-                      ArraySM(r'siesta: Atomic forces \(eV/Ang\):',
-                              r'siesta:\s*[0-9]+\s+\S+\s+\S+\s+\S+',
-                              get_array('atom_forces', float, 2, 5,
-                                        unit='eV/angstrom'),
-                              name='forces-in-single-calc'),
-                      ArraySM(r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
-                              r'siesta:\s*\S+\s+\S+\s+\S+',
-                              get_stress),
-                      ArraySM(r'siesta: Electric dipole \(Debye\)\s*=',
-                              r'siesta: Electric dipole \(Debye\)\s*=',
-                              get_dipole,
-                              forwardMatch=True),
-                      # The purpose of the following matcher is to parse all lines
-                      SM(r'x^', name='end')
-                  ])
+               SM(r'Siesta Version: siesta-(?P<program_version>\S+)',
+                  name='version',
+                  adHoc=context.adhoc_format_new),
+               SM(r'SIESTA\s*(?P<program_version>.+)',
+                  name='alt-version', adHoc=context.adhoc_format_old),
+               SM(r'Architecture\s*:\s*(?P<x_siesta_arch>.+)', name='arch'),
+               SM(r'Compiler flags\s*:\s*(?P<x_siesta_compilerflags>.+)',
+                  name='flags'),
            ])
+    return m
+
+
+welcome_pattern = r'\s*\*\s*WELCOME TO SIESTA\s*\*'
+
+def get_input_matcher():
+    m = SM(welcome_pattern,
+           name='welcome',
+           sections=['section_method'],
+           subFlags=SM.SubFlags.Unordered,
+           subMatchers=[
+               SM(r'NumberOfAtoms\s*(?P<number_of_atoms>\d+)',
+                  name='natoms'),
+               context.multi_sm('block_species_label',
+                                r'%block ChemicalSpeciesLabel',
+                                r'\s*\d+\s*\d+\s*(\S+)',
+                            conflict='keep'),
+               context.multi_sm('block_coords_and_species',
+                                r'%block AtomicCoordinatesAndAtomicSpecies',
+                                r'\s*(\S+)\s*(\S+)\s*(\S+)\s*(\d+)'),
+               context.multi_sm('block_lattice_vectors',
+                                r'%block LatticeVectors',
+                                r'(?!%)\s*(\S+)\s*(\S+)\s*(\S+)'),
+               SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
+                  name='xc authors',
+                  fixedStartValues={'x_siesta_xc_authors': 'CA'},
+                  sections=['section_method', 'x_siesta_section_xc_authors']),
+               SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)',
+                  name='syslabel', forwardMatch=True,
+                  sections=['x_siesta_section_input'],
+                  adHoc=context.adhoc_set_label),
+               context.multi_sm('coords_and_species',
+                                r'siesta: Atomic coordinates \(Bohr\) and species',
+                                r'siesta:\s*(\S+)\s*(\S+)\s*(\S+)\s*(\d+)'),
+               context.multi_sm('auto_unit_cell_ang',
+                                r'siesta: Automatic unit cell vectors \(Ang\):',
+                                r'siesta:\s*(\S+)\s*(\S+)\s*(\S+)'),
+               SM(r'Total number of electrons:\s*(?P<number_of_electrons>\S+)',
+                  name='nelectrons'),
+       ])
+    return m
+
+
+step_pattern = r'\s*(Single-point calculation|Begin[^=]+=\s*\d+)'
+
+def get_step_matcher():
+    m = SM(step_pattern,
+           name='step',
+           #repeats=True,
+           sections=['section_single_configuration_calculation'],
+           subMatchers=[
+               SM(r'\s*=============+', name='====='),
+               context.multi_sm('outcoord_ang',
+                                r'outcoor: Atomic coordinates \(Ang\):',
+                                r'\s*(\S+)\s*(\S+)\s*(\S+)'),
+               context.multi_sm('outcell_ang',
+                                r'outcell: Unit cell vectors \(Ang\):',
+                                r'\s*(\S+)\s*(\S+)\s*(\S+)'),
+               context.multi_sm('forces_ev_ang',
+                                r'siesta: Atomic forces \(eV/Ang\):',
+                                r'\s+\d+\s*(\S+)\s*(\S+)\s*(\S+)')
+           ])
+    return m
+
+
+mainFileDescription = SM(
+    r'',
+    name='root',
+    #weak=True,
+    #fixedStartValues={'program_name': 'siesta',
+    #                  'program_basis_set_type': 'numeric AOs',
+    #                  'configuration_periodic_dimensions': np.ones(3, bool)},
+    sections=['section_run'],
+    subMatchers=[
+        get_header_matcher(),
+        SM(r'(%s|%s)' % (welcome_pattern, step_pattern),
+           name='system-section',
+           #weak=True,
+           forwardMatch=True,
+           repeats=True,
+           required=True,
+           sections=['section_system'],
+           subMatchers=[
+               get_input_matcher(),
+               get_step_matcher(),
+           ]),
+        SM(r'x^',  # Make sure whole file is parsed
+           name='end')
     ])
 
+
+
 def main(**kwargs):
-    mainFunction(mainFileDescription=infoFileDescription,
+    mainFunction(mainFileDescription=mainFileDescription,
                  metaInfoEnv=metaInfoEnv,
                  parserInfo=parser_info,
                  cachingLevelForMetaName={},

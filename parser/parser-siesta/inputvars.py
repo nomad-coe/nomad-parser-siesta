@@ -1,4 +1,4 @@
-inputvars = [
+varlist = [
     'Atom-Setup-Only',
     'Atom.Debug.KB.Generation',
     'AtomCoorFormatOut',

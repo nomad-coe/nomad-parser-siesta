@@ -48,10 +48,16 @@ def get_input_metadata(inputvars_file, use_new_format):
 
     varset = set(varlist)
 
+    lower_vars = {}
+    for var in varlist:
+        lower_vars[var.lower()] = var
+
     def addvar(tokens):
         name = tokens[0]
         val = ' '.join(tokens[1:])
-        if name in varset:
+        name = name.lower()
+        if name in lower_vars:
+            name = lower_vars[name]
             inputvars[name] = val
 
     currentblock = None
@@ -119,12 +125,12 @@ class SiestaContext(object):
         self.files = None  # Dict of files
         self.blocks = None  # Dict of input blocks (coords, cell, etc.)
 
-        self._is_last_configuration = False  # XXX
         self.data = {}
         self.special_input_vars = {}
 
         self.system_meta = {}
         self.section_refs = {}  # {name: gindex, ...}
+        self.simulation_type = None
 
     def adhoc_format_new(self, parser):
         assert self.format is None
@@ -156,13 +162,29 @@ class SiestaContext(object):
             # what else?  We already get force/stress/positions from stdout.
         if self.format == 'new':
             inplogfiles = glob('%s/fdf-*.log' % dirname)
+            assert len(inplogfiles) == 1
             if inplogfiles:
                 inplogfiles.sort()
-                files['inputlog'] = inplogfiles[-1]
+                files['inputlog'] = inplogfiles[0]
         else:
             assert self.format == 'old', self.format
             files['inputlog'] = os.path.join(dirname, 'out.fdf')
         self.files = files
+
+    def adhoc_set_simulation_type(self, parser):
+        line = parser.fIn.readline()
+
+        if self.simulation_type is not None:
+            return
+
+        line = line.strip()
+
+        if line.startswith('Single-point'):
+            self.simulation_type = 'singlepoint'
+        elif 'opt' in line or 'move' in line:
+            self.simulation_type = 'optimization'
+        else:
+            raise ValueError('Todo: recognize simulation type "%s"' % line)
 
     def startedParsing(self, fname, parser):
         self.fname = fname
@@ -170,43 +192,45 @@ class SiestaContext(object):
         self.dirname, _ = os.path.split(path)
         #self.parser = parser
 
-    def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
-        authors = section['x_siesta_xc_authors']
-        if authors is None:
-            raise ValueError('XC authors not found!')
+    #def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
 
-        assert len(authors) == 1
-        authors = authors[0]
+    def onClose_section_frame_sequence(self, backend, gindex, section):
+        backend.addValue('frame_sequence_to_sampling_ref',
+                         self.section_refs['sampling_method'])
 
-        mapping = {'CA': ('LDA_X', 'LDA_C_PZ'),
-                   'PZ': ('LDA_X', 'LDA_C_PZ'),
-                   'PW92': ('LDA_X', 'LDA_C_PW'),
-                   #'PW91': '',
-                   'PBE': ('GGA_X_PBE', 'GGA_C_PBE'),
-                   'revPBE': ('GGA_X_PBE_R', 'GGA_C_PBE'),
-                   'RPBE': ('GGA_X_RPBE', 'GGA_C_PBE'),
-                   #'WC': ('GGA_X_WC', ),
-                   # Siesta does not mention which correlation is used with
-                   # the WC functional.  Is it just the PBE one?
-                   'AM05': ('GGA_X_AM05', 'GGA_C_AM05'),
-                   'PBEsol': ('GGA_X_PBE_SOL', 'GGA_C_PBE_SOL'),
-                   'BLYP': ('GGA_X_B88 + GGA_C_LYP')}
-        xc = mapping.get(authors)
+    def onOpen_section_sampling_method(self, backend, gindex, section):
+        self.section_refs['sampling_method'] = gindex
 
-        if xc is None:
-            raise ValueError('XC functional %s unsupported by parser'
-                             % authors)
+    def onOpen_section_frame_sequence(self, backend, gindex, section):
+        self.section_refs['frame_sequence'] = gindex
 
-        for funcname in xc:
-            gid = backend.openSection('section_XC_functionals')
-            backend.addValue('XC_functional_name', funcname)
-            backend.closeSection('section_XC_functionals', gid)
+    def onClose_section_sampling_method(self, backend, gindex, section):
+        simtype = self.simulation_type
+        assert simtype is not None
+        if simtype == 'optimization':
+            backend.addValue('sampling_method', 'geometry_optimization')
+        elif simtype == 'singlepoint':
+            pass
+        else:
+            raise ValueError('XXX: %s' % simtype)
 
     def onClose_section_eigenvalues(self, backend, gindex, section):
         self.read_eigenvalues(backend)
 
     def onOpen_section_method(self, backend, gindex, section):
         self.section_refs['method'] = gindex
+
+    def onClose_section_method(self, backend, gindex, section):
+        temp = self.special_input_vars['ElectronicTemperature']
+        temp, unit = temp.split()
+        assert unit == 'Ry'  # Siesta always converts to Ry here I think
+        temp = float(temp)
+        temp = convert_unit(temp, 'rydberg')
+        backend.addValue('smearing_width', temp)
+
+        #simtype = self.special_input_vars['MD.TypeOfRun']
+        #print('SIMTYPE', simtype)
+        #sdfsdf
 
     def onOpen_section_system(self, backend, gindex, section):
         self.section_refs['system'] = gindex
@@ -308,7 +332,7 @@ class SiestaContext(object):
     def onClose_x_siesta_section_input(self, backend, gindex, section):
         inputvars_file = self.files.get('inputlog')
         if inputvars_file is None:
-            return
+            raise ValueError('no input logfile!')
 
         inputvars, blocks = get_input_metadata(inputvars_file,
                                                self.format == 'new')
@@ -317,10 +341,43 @@ class SiestaContext(object):
 
         for special_name in ['LatticeConstant',
                              'AtomicCoordinatesFormat',
-                             'AtomicCoordinatesFormatOut']:
+                             'AtomicCoordinatesFormatOut',
+                             'ElectronicTemperature']:
             self.special_input_vars[special_name] = inputvars.get(special_name)
 
         self.blocks = blocks
+
+        authors = section['x_siesta_xc_authors']
+        if authors is None:
+            raise ValueError('XC authors not found!')
+
+        assert len(authors) == 1
+        authors = authors[0]
+
+        # XXX Case sensitive?
+        mapping = {'CA': ('LDA_X', 'LDA_C_PZ'),
+                   'PZ': ('LDA_X', 'LDA_C_PZ'),
+                   'PW92': ('LDA_X', 'LDA_C_PW'),
+                   #'PW91': '',
+                   'PBE': ('GGA_X_PBE', 'GGA_C_PBE'),
+                   'revPBE': ('GGA_X_PBE_R', 'GGA_C_PBE'),
+                   'RPBE': ('GGA_X_RPBE', 'GGA_C_PBE'),
+                   #'WC': ('GGA_X_WC', ),
+                   # Siesta does not mention which correlation is used with
+                   # the WC functional.  Is it just the PBE one?
+                   'AM05': ('GGA_X_AM05', 'GGA_C_AM05'),
+                   'PBEsol': ('GGA_X_PBE_SOL', 'GGA_C_PBE_SOL'),
+                   'BLYP': ('GGA_X_B88 + GGA_C_LYP')}
+        xc = mapping.get(authors)
+
+        if xc is None:
+            raise ValueError('XC functional %s unsupported by parser'
+                             % authors)
+
+        for funcname in xc:
+            gid = backend.openSection('section_XC_functionals')
+            backend.addValue('XC_functional_name', funcname)
+            backend.closeSection('section_XC_functionals', gid)
 
     def read_eigenvalues(self, backend):
         eigfile = self.files.get('EIG')
@@ -448,35 +505,47 @@ def get_header_matcher():
     return m
 
 
+def anycase(string):
+    tokens = []
+    for letter in list(string):
+        if letter.isalpha():
+            tokens.append('[%s%s]' % (letter.upper(),
+                                      letter.lower()))
+        else:
+            tokens.append(letter)
+    return ''.join(tokens)
+
 welcome_pattern = r'\s*\*\s*WELCOME TO SIESTA\s*\*'
 
 def get_input_matcher():
     m = SM(welcome_pattern,
            name='welcome',
-           sections=['section_method'],
+           sections=['section_method', 'x_siesta_section_input'],
+           fixedStartValues={'electronic_structure_method': 'DFT',
+                             'smearing_kind': 'fermi'},
            subFlags=SM.SubFlags.Unordered,
            subMatchers=[
                SM(r'NumberOfAtoms\s*(?P<number_of_atoms>\d+)',
                   name='natoms'),
                context.multi_sm('block_species_label',
-                                r'%block ChemicalSpeciesLabel',
+                                anycase(r'%block ChemicalSpeciesLabel'),
                                 r'\s*\d+\s*\d+\s*(\S+)',
                             conflict='keep'),
                context.multi_sm('block_coords_and_species',
-                                r'%block AtomicCoordinatesAndAtomicSpecies',
+                                anycase(r'%block AtomicCoordinatesAndAtomicSpecies'),
                                 r'\s*(\S+)\s*(\S+)\s*(\S+)\s*(\d+)'),
                context.multi_sm('block_lattice_vectors',
-                                r'%block LatticeVectors',
+                                anycase(r'%block LatticeVectors'),
                                 r'(?!%)\s*(\S+)\s*(\S+)\s*(\S+)'),
-               SM(r'xc.authors\s*(?P<x_siesta_xc_authors>\S+)',
+               SM(r'%s\s*(?P<x_siesta_xc_authors>\S+)' % anycase('xc\.authors'),
                   name='xc authors',
-                  fixedStartValues={'x_siesta_xc_authors': 'CA'},
-                  sections=['section_method', 'x_siesta_section_xc_authors']),
+                  fixedStartValues={'x_siesta_xc_authors': 'CA'}),
+               #SM(r'MD.TypeOfRun\s*(?P<x_siesta_typeofrun>\S+)',
+               #   fixedStartValues={'x_siesta_typeofrun': 'none'}),
                SM(r'reinit: System Name:\s*(?P<system_name>.+)',
                   name='sysname'),
                SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)',
                   name='syslabel', forwardMatch=True,
-                  sections=['x_siesta_section_input'],
                   adHoc=context.adhoc_set_label),
                context.multi_sm('coords_and_species',
                                 r'siesta: Atomic coordinates \(Bohr\) and species',
@@ -495,6 +564,8 @@ step_pattern = r'\s*(Single-point calculation|Begin[^=]+=\s*\d+)'
 def get_step_matcher():
     m = SM(step_pattern,
            name='step',
+           forwardMatch=True,
+           adHoc=context.adhoc_set_simulation_type,
            sections=['section_single_configuration_calculation'],
            subFlags=SM.SubFlags.Unordered,
            subMatchers=[
@@ -547,7 +618,7 @@ mainFileDescription = SM(
            forwardMatch=True,
            repeats=True,
            required=True,
-           sections=['section_system'],
+           sections=['section_system', 'section_frame_sequence', 'section_sampling_method'],
            subMatchers=[
                get_input_matcher(),
                get_step_matcher(),

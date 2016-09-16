@@ -27,26 +27,60 @@ json_section_template = """{
       "kindStr": "type_abstract_document_content",
       "name": "%(name)s",
       "superNames": [
+        "x_siesta_section_input"
+      ]
+    }, {
+      "description": "input section",
+      "kindStr": "type_section",
+      "name": "x_siesta_section_input",
+      "superNames": [
         "section_run"
       ]
     }"""
 # END OF TEMPLATES FROM OCTOPUS
 
 import sys
-fname = sys.argv[1]
+#fname = sys.argv[1]
 
 inputvars_fd = open('inputvars.py', 'w')
-print('inputvars = [', file=inputvars_fd)
+print('varlist = [', file=inputvars_fd)
 
-with open(fname) as fd:
-    varnames = []
+def getlines():
+    fd = open('test/H2O/fdf-95611.log')
     for line in fd:
         if not line[:1].isalpha():  # Get rid of blocks
             continue
+        yield line
+
+    withinblock = False
+    fd = open('test/smeagol-Au-leads/out.fdf')
+    for line in fd:
+        if line.startswith('%block'):
+            withinblock = True
+        elif line.startswith('%endblock'):
+            withinblock = False
+        if withinblock:
+            continue
+        yield line
+
+seen = set()
+
+#with open(fname) as fd:
+#for line in getlines():
+if 1:
+    varnames = []
+    for line in getlines():
 
         # Get rid of comments
-        line = line.strip().rsplit('#', 1)[0]
+        line = line.strip().rsplit('#', 1)[0].strip()
+        if not line:
+            continue
         varname = line.split()[0]
+        lowervarname = varname.lower()
+        if lowervarname in seen:
+            continue  # Already registered
+
+        seen.add(lowervarname)
         varnames.append(varname)
     varnames = list(set(varnames))
     varnames.sort()

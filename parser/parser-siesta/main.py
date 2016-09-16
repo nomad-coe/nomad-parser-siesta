@@ -31,6 +31,7 @@ def siesta_energy(title, meta, **kwargs):
     return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S+)' % (title, meta),
               name=meta, **kwargs)
 
+
 def line_iter(fd, linepattern = re.compile(r'\s*([^#]+)')):
     # Strip off comments and whitespace, return only non-empty strings
     for line in fd:
@@ -124,50 +125,6 @@ class SiestaContext(object):
 
         self.system_meta = {}
         self.section_refs = {}  # {name: gindex, ...}
-
-    def multi_sm0(self, pattern, var, dtypes=None, **kwargs):
-        pat = re.compile(pattern)
-        ngroups = pat.groups
-        if dtypes is None:
-            dtypes = [float] * ngroups
-        else:
-            assert len(dtypes) == ngroups
-
-        class LineBuf:
-            def __init__(self, ctxt):
-                self.lines = []
-                self.ctxt = ctxt
-
-            def adhoc_addrow(self, parser):
-                line = parser.fIn.readline()
-                print('LINE', line)
-                groups = pat.match(line).groups()
-                results = [dtype(group)
-                           for dtype, group in zip(dtypes, groups)]
-                self.lines.append(results)
-
-            def _build_array(self, parser):
-                arr = np.array(self.lines)
-                self.ctxt.data[var] = arr
-                print('SET', var, arr)
-                ksdfjksjdf
-                self.lines = []
-
-        linebuf = LineBuf(self)
-        sm = SM(r'', weak=True,
-                forwardMatch=True,
-                subFlags=SM.SubFlags.Sequenced,
-                subMatchers=[
-                    SM(pattern,
-                       repeats=True,
-                       forwardMatch=True,
-                       required=True,
-                       adHoc=linebuf.adhoc_addrow),
-                    SM(r'', endReStr='', adHoc=linebuf._build_array,
-                       name='endarray',
-                       forwardMatch=True)
-                ], **kwargs)
-        return sm
 
     def adhoc_format_new(self, parser):
         assert self.format is None
@@ -515,6 +472,8 @@ def get_input_matcher():
                   name='xc authors',
                   fixedStartValues={'x_siesta_xc_authors': 'CA'},
                   sections=['section_method', 'x_siesta_section_xc_authors']),
+               SM(r'reinit: System Name:\s*(?P<system_name>.+)',
+                  name='sysname'),
                SM(r'reinit: System Label:\s*(?P<x_siesta_system_label>\S+)',
                   name='syslabel', forwardMatch=True,
                   sections=['x_siesta_section_input'],
@@ -550,10 +509,27 @@ def get_step_matcher():
                   name='etotal'),
                context.multi_sm('forces_ev_ang',
                                 r'siesta: Atomic forces \(eV/Ang\):',
-                                r'\s+\d+\s*(\S+)\s*(\S+)\s*(\S+)'),
+                                r'(?:siesta:)?\s+\d+\s*(\S+)\s*(\S+)\s*(\S+)'),
                context.multi_sm('stress_tensor_ev_ang',
                                 r'siesta: Stress tensor \(static\) \(eV/Ang\*\*3\):',
                                 r'siesta:\s*(\S+)\s*(\S+)\s*(\S+)'),
+               SM(r'siesta: Final energy \(eV\):',
+                  endReStr='siesta:\s*Total\s*=\s*\S+',
+                  name='Efinal',
+                  subMatchers=[
+                      siesta_energy('Band Struct\.', 'energy_sum_eigenvalues'),
+                      siesta_energy('Kinetic', 'electronic_kinetic_energy'),
+                      siesta_energy('Hartree', 'energy_electrostatic'),
+                      #siesta_energy('Ext\. field', ''),
+                      siesta_energy('Exch\.-corr\.', 'energy_XC'),
+                      #siesta_energy('Ion-electron', ''),
+                      #siesta_energy('Ion-Ion', ''),
+                      #siesta_energy('Ekinion', ''),
+                      # energy_total was matched above already
+                      #siesta_energy('Total', 'energy_total'),
+                      SM(r'', weak=True, name='trigger_readeig',
+                         sections=['section_eigenvalues']),
+                  ]),
            ])
     return m
 

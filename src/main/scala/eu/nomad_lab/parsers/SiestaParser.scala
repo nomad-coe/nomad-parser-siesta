@@ -22,7 +22,7 @@ object SiestaParser extends SimpleExternalParserGenerator(
   ),
   mainFileTypes = Seq("text/.*"),
   //TODO: Update the replacement string (mainFileRe)
-  mainFileRe = """Siesta Version: siesta-""".r,
+  mainFileRe = """(Siesta Version: siesta-|SIESTA [0-9]\.[0-9]\.[0-9])""".r,
   cmd = Seq(DefaultPythonInterpreter.pythonExe(), "${envDir}/parsers/siesta/parser/parser-siesta/main.py",
     "${mainFilePath}"),
   resList = Seq(

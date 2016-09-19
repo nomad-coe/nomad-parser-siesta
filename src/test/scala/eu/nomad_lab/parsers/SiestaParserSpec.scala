@@ -34,5 +34,23 @@ object SiestaParserSpec extends Specification {
     "test Fe with json" >> {
       ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/Fe/out", "json") must_== ParseResult.ParseSuccess
     }
+    "test MgO with json-events" >> {
+      ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/MgO/out", "json-events") must_== ParseResult.ParseSuccess
+    }
+    "test MgO with json" >> {
+      ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/MgO/out", "json") must_== ParseResult.ParseSuccess
+    }
+    "test smeagol-Au-leads with json-events" >> {
+      ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/smeagol-Au-leads/Au.out", "json-events") must_== ParseResult.ParseSuccess
+    }
+    "test smeagol-Au-leads with json" >> {
+      ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/smeagol-Au-leads/Au.out", "json") must_== ParseResult.ParseSuccess
+    }
+    "test smeagol-Au-scregion with json-events" >> {
+      ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/smeagol-Au-scregion/Au.out", "json-events") must_== ParseResult.ParseSuccess
+    }
+    "test smeagol-Au-scregion with json" >> {
+      ParserRun.parse(SiestaParser, "parsers/siesta/test/examples/smeagol-Au-scregion/Au.out", "json") must_== ParseResult.ParseSuccess
+    }
   }
 }

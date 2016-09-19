@@ -553,8 +553,9 @@ def get_input_matcher():
                context.multi_sm('auto_unit_cell_ang',
                                 r'siesta: Automatic unit cell vectors \(Ang\):',
                                 r'siesta:\s*(\S+)\s*(\S+)\s*(\S+)'),
-               SM(r'Total number of electrons:\s*(?P<number_of_electrons>\S+)',
-                  name='nelectrons'),
+               # XXX must be an array with number of spin channels!
+               #SM(r'Total number of electrons:\s*(?P<number_of_electrons>\S+)',
+               #   name='nelectrons'),
        ])
     return m
 

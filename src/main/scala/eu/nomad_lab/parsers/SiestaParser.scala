@@ -27,6 +27,7 @@ object SiestaParser extends SimpleExternalParserGenerator(
     "${mainFilePath}"),
   resList = Seq(
     "parser-siesta/main.py",
+    "parser-siesta/inputvars.py",
     "parser-siesta/util.py",
     "parser-siesta/setup_paths.py",
     "nomad_meta_info/public.nomadmetainfo.json",

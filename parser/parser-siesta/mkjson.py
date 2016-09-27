@@ -34,7 +34,7 @@ json_section_template = """{
       "kindStr": "type_section",
       "name": "x_siesta_section_input",
       "superNames": [
-        "section_run"
+        "section_method"
       ]
     }"""
 # END OF TEMPLATES FROM OCTOPUS

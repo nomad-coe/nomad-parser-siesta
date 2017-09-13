@@ -81,7 +81,9 @@ def get_input_metadata(inputvars_file, use_new_format):
             else:
                 if use_new_format:
                     if line.startswith(' '):
-                        assert currentblock is not None
+                        if currentblock is None:
+                            continue  # Ignore.  Probably some warning
+                        #assert currentblock is not None, line
                         currentblock.append(tokens)
                     else:
                         currentblock = None
@@ -493,7 +495,7 @@ def get_header_matcher():
            weak=True,
            forwardMatch=True,
            subMatchers=[
-               SM(r'Siesta Version: siesta-(?P<program_version>\S+)',
+               SM(r'Siesta Version: (?P<program_version>\S+)',
                   name='version',
                   adHoc=context.adhoc_format_new),
                SM(r'SIESTA\s*(?P<program_version>.+)',

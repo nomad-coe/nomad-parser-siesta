@@ -270,7 +270,9 @@ class SiestaContext(object):
             labels = labels[:, 0]
             self.labels = labels
 
-        block_coords_and_species = data.pop('block_coords_and_species', None)
+        block_coords_and_species = self.data.pop('block_coords_and_species_from_inputlog', None)
+
+        block_coords_and_species = data.pop('block_coords_and_species', block_coords_and_species)
         coords_and_species = data.pop('coords_and_species', None)
 
         if coords_and_species is None:
@@ -348,6 +350,7 @@ class SiestaContext(object):
             self.special_input_vars[special_name] = inputvars.get(special_name)
 
         self.blocks = blocks
+        self.data['block_coords_and_species_from_inputlog'] = np.array(blocks['AtomicCoordinatesAndAtomicSpecies'], str)
 
         authors = section['x_siesta_xc_authors']
         if authors is None:

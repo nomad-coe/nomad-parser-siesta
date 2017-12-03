@@ -372,7 +372,15 @@ class SiestaContext(object):
                    # the WC functional.  Is it just the PBE one?
                    'AM05': ('GGA_X_AM05', 'GGA_C_AM05'),
                    'PBEsol': ('GGA_X_PBE_SOL', 'GGA_C_PBE_SOL'),
-                   'BLYP': ('GGA_X_B88 + GGA_C_LYP')}
+                   'BLYP': ('GGA_X_B88', 'GGA_C_LYP'),
+                   'DF1': ('gga_x_pbe_r', 'vdw_c_df1'),
+                   'DRSLL': ('gga_x_pbe_r', 'vdw_c_df1'),
+                   'LMKLL': ('gga_x_rpw86', 'vdw_c_df2'),
+                   'DF2': ('gga_x_rpw86', 'vdw_c_df2'),
+                   'KBM': ('GGA_X_OPTB88_VDW', 'vdw_c_df1'),
+                   'C09': ('GGA_X_C09X', 'vdw_c_df1'),
+                   'BH': ('GGA_X_LV_RPW86', 'vdw_c_df1'),
+        }
         xc = mapping.get(authors)
 
         if xc is None:

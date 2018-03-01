@@ -43,7 +43,6 @@ object SiestaParser extends SimpleExternalParserGenerator(
   resList = Seq(
     "parser-siesta/main.py",
     "parser-siesta/inputvars.py",
-    "parser-siesta/util.py",
     "parser-siesta/setup_paths.py",
     "nomad_meta_info/public.nomadmetainfo.json",
     "nomad_meta_info/common.nomadmetainfo.json",

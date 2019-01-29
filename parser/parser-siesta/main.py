@@ -42,6 +42,9 @@ metaInfoEnv, warnings = loadJsonFile(filePath=metaInfoPath,
 
 parser_info = {'name':'siesta-parser', 'version': '1.0'}
 
+def metaN(metaName):
+    """Retrurns a normalized meta name"""
+    return metaName.replace(".", "_").replace("-", "_").lower()
 
 def siesta_energy(title, meta, **kwargs):
     return SM(r'siesta:\s*%s\s*=\s*(?P<%s__eV>\S+)' % (title, meta),
@@ -213,7 +216,7 @@ class SiestaContext(object):
     #def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
 
     def onClose_section_frame_sequence(self, backend, gindex, section):
-        backend.addValue('frame_sequence_to_sampling_ref',
+        backend.addValue('frame_sequence_to_sampling_method_ref',
                          self.section_refs['sampling_method'])
 
     def onOpen_section_sampling_method(self, backend, gindex, section):
@@ -320,7 +323,7 @@ class SiestaContext(object):
             meta['atom_positions'] = positions
 
         for key, value in meta.items():
-            backend.addArrayValues(key, value)
+            backend.addArrayValues(metaN(key), value)
 
         backend.addArrayValues('configuration_periodic_dimensions',
                                np.ones(3, bool))
@@ -336,7 +339,11 @@ class SiestaContext(object):
         if forces is not None:
             forces = forces.astype(float)
             forces = convert_unit(forces, 'eV/angstrom')
-            backend.addArrayValues('atom_forces_free_raw', forces)
+            fId = backend.openSection('section_atom_forces')
+            backend.addValue('atom_forces_quantity', 'energy_free')
+            backend.addValue('atom_forces_constraints', 'raw')
+            backend.addArrayValues('atom_forces', forces)
+            backend.closeSection('section_atom_forces', fId)
 
         stress = self.data.pop('stress_tensor_ev_ang', None)
         if stress is not None:
@@ -344,7 +351,7 @@ class SiestaContext(object):
             stress = convert_unit(stress, 'eV/angstrom^3')
             backend.addArrayValues('stress_tensor', stress)
 
-        backend.addValue('single_configuration_to_calculation_method_ref',
+        backend.addValue('single_configuration_calculation_to_method_ref',
                          self.section_refs['method'])
         backend.addValue('single_configuration_calculation_to_system_ref',
                          self.section_refs['system'])
@@ -357,7 +364,7 @@ class SiestaContext(object):
         inputvars, blocks = get_input_metadata(inputvars_file,
                                                self.format == 'new')
         for varname, value in inputvars.items():
-            backend.addValue('x_siesta_input_%s' % varname, value)
+            backend.addValue(metaN('x_siesta_input_%s' % varname), value)
 
         for special_name in ['LatticeConstant',
                              'AtomicCoordinatesFormat',
@@ -404,9 +411,9 @@ class SiestaContext(object):
                              % authors)
 
         for funcname in xc:
-            gid = backend.openSection('section_XC_functionals')
-            backend.addValue('XC_functional_name', funcname)
-            backend.closeSection('section_XC_functionals', gid)
+            gid = backend.openSection('section_xc_functionals')
+            backend.addValue('xc_functional_name', funcname)
+            backend.closeSection('section_xc_functionals', gid)
 
     def read_eigenvalues(self, backend):
         eigfile = self.files.get('EIG')
@@ -450,8 +457,8 @@ class SiestaContext(object):
         coords = data[:, 1:4].astype(float)
         weights = data[:, 4].astype(float)
         backend.addArrayValues('eigenvalues_kpoints', coords)
-        # XXX metadata for Fermi level?
-        # k-point weights?
+        # XXX metadata for Fermi level? -> energy_reference_fermi
+        backend.addArrayValues('eigenvalues_kpoints_weights', weights)
 
     def save_array(self, key, dtype=float, istart=0, iend=None,
                    unit=None):
@@ -622,7 +629,7 @@ def get_step_matcher():
                       siesta_energy('Kinetic', 'electronic_kinetic_energy'),
                       siesta_energy('Hartree', 'energy_electrostatic'),
                       #siesta_energy('Ext\. field', ''),
-                      siesta_energy('Exch\.-corr\.', 'energy_XC'),
+                      siesta_energy('Exch\.-corr\.', 'energy_xc'),
                       #siesta_energy('Ion-electron', ''),
                       #siesta_energy('Ion-Ion', ''),
                       #siesta_energy('Ekinion', ''),

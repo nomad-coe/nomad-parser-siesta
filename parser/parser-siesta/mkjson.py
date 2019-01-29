@@ -62,6 +62,10 @@ import sys
 inputvars_fd = open('inputvars.py', 'w')
 print('varlist = [', file=inputvars_fd)
 
+def metaN(metaName):
+    """Retrurns a normalized meta name"""
+    return metaName.replace(".", "_").replace("-", "_").lower()
+
 def getlines():
     fd = open('test/H2O/fdf-95611.log')
     for line in fd:
@@ -107,7 +111,7 @@ if 1:
         print("    '%s'," % var, file=inputvars_fd)
         json = json_template % dict(description=r'siesta input variable \"%s\"'
                                     % var,
-                                    name='x_siesta_input_%s' % var,
+                                    name=metaN('x_siesta_input_%s' % var),
                                     dtypeStr='C',
                                     supername='x_siesta_input')
         jsontokens.append(json)

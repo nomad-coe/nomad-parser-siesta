@@ -130,9 +130,11 @@ H                     1                    # Species label, number of l-shells
 """
 
 
-
 class SiestaContext(object):
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.fname = None  # The file that we are parsing
         self.dirname = None  # Base directory of calculations
         #self.parser = None  # The parser object
@@ -671,6 +673,7 @@ class SiestaParser():
        logging.info('siesta parser started')
        logging.getLogger('nomadcore').setLevel(logging.WARNING)
        backend = self.backend_factory(metaInfoEnv)
+       context.reset()
        with patch.object(sys, 'argv', ['<exe>', '--uri', 'nmd://uri', mainfile]):
            mainFunction(
                mainFileDescription,

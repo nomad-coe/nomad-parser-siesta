@@ -207,8 +207,7 @@ class SiestaContext(object):
     def startedParsing(self, fname, parser):
         self.fname = fname
         path = os.path.abspath(fname)
-        self.dirname, _ = os.path.split(path)
-        #self.parser = parser
+        self.dirname = os.path.dirname(path)
 
     #def onClose_x_siesta_section_xc_authors(self, backend, gindex, section):
 
@@ -678,7 +677,7 @@ class SiestaParser():
                metaInfoEnv,
                parser_info,
                cachingLevelForMetaName={},
-               superContext=SiestaContext(),
+               superContext=context,
                superBackend=backend)
 
        return backend

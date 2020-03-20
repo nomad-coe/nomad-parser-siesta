@@ -34,12 +34,6 @@ from nomadcore.unit_conversion.unit_conversion \
 
 from siestaparser.inputvars import varlist
 
-# metaInfoPath = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"../../../../nomad-meta-info/meta_info/nomad_meta_info/siesta.nomadmetainfo.json"))
-# metaInfoEnv, warnings = loadJsonFile(filePath=metaInfoPath,
-#                                      dependencyLoader=None,
-#                                      extraArgsHandling=InfoKindEl.ADD_EXTRA_ARGS,
-#                                      uri=None)
-
 parser_info = {'name':'siesta-parser', 'version': '1.0'}
 
 
@@ -659,10 +653,6 @@ mainFileDescription = SM(
     ])
 
 
-import nomad_meta_info
-metaInfoPath = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(nomad_meta_info.__file__)), "siesta.nomadmetainfo.json"))
-metaInfoEnv, warnings = loadJsonFile(filePath = metaInfoPath, dependencyLoader = None, extraArgsHandling = InfoKindEl.ADD_EXTRA_ARGS, uri = None)
-
 class SiestaParser():
    """ A proper class envolop for running this parser from within python. """
    def __init__(self, backend, **kwargs):
@@ -672,28 +662,15 @@ class SiestaParser():
        from unittest.mock import patch
        logging.info('siesta parser started')
        logging.getLogger('nomadcore').setLevel(logging.WARNING)
-       backend = self.backend_factory(metaInfoEnv)
+       backend = self.backend_factory("siesta.nomadmetainfo.json")
        context.reset()
        with patch.object(sys, 'argv', ['<exe>', '--uri', 'nmd://uri', mainfile]):
            mainFunction(
                mainFileDescription,
-               metaInfoEnv,
+               None,
                parser_info,
                cachingLevelForMetaName={},
                superContext=context,
                superBackend=backend)
 
        return backend
-
-
-def main(**kwargs):
-    mainFunction(mainFileDescription=mainFileDescription,
-                 metaInfoEnv=metaInfoEnv,
-                 parserInfo=parser_info,
-                 cachingLevelForMetaName={},
-                 superContext=context,
-                 **kwargs)
-
-if __name__ == '__main__':
-    main()
-

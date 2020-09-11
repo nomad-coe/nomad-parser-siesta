@@ -1,0 +1,7 @@
+codeLabel: SIESTA
+codeLabelStyle: All in capitals
+codeUrl: https://departments.icmab.es/leem/siesta/
+parserDirName: dependencies/parsers/siesta/
+parserGitUrl: https://gitlab.mpcdf.mpg.de/nomad-lab/parser-siesta
+parserSpecific: ''
+tableOfFiles: ''

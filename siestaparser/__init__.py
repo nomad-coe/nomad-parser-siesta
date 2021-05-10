@@ -17,4 +17,4 @@
 # limitations under the License.
 #
 
-from siestaparser.main import SiestaParser
+from .siesta_parser import SiestaParser

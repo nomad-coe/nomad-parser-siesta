@@ -37,6 +37,6 @@ class SiestaParser(BasicParser):
             # TODO support for various input, output formats
             atom_labels_atom_positions_scaled=r'outcoor\: Atomic coordinates \((?:fractional|scaled)\)\:([\s\S]+?\n *\n)',
             atom_labels_atom_positions=r'outcoor\: Atomic coordinates \(Ang\)\:([\s\S]+?\n *\n)',
-            energy_method_current=rf'siesta\: E_KS\(eV\) = +({re_f})',
+            energy_current=rf'siesta\: E_KS\(eV\) = +({re_f})',
             energy_total=rf'siesta\: Etot +\= +({re_f})',
             atom_forces=r'siesta: Atomic forces \(eV/Ang\)\:([\s\S]+?)\-{10}')
